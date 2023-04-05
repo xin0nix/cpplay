@@ -1,0 +1,52 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build-debug",
+        "type": "shell",
+        "command": "mkdir -p ${workspaceFolder}/build/debug && cd ${workspaceFolder}/build/debug && cmake ../.. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Debug -G Ninja && ninja",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": [
+          "$gcc"
+          
+        ]
+      },
+      {
+        "label": "build-release",
+        "type": "shell",
+        "command": "mkdir -p ${workspaceFolder}/build/release && cd ${workspaceFolder}/build/release && cmake ../.. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=Release -G Ninja && ninja",
+        "group": {
+          "kind": "build"
+        },
+        "problemMatcher": [
+          "$gcc"
+        ]
+      },
+      {
+        "label": "test-release",
+        "type": "shell",
+        "dependsOn": [
+          "build-release"
+        ],
+        "command": "${workspaceFolder}/build/release/solution-test",
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        }
+      },
+      {
+        "label": "benchmark-release",
+        "type": "shell",
+        "dependsOn": [
+          "build-release"
+        ],
+        "command": "${workspaceFolder}/build/release/solution-benchmark",
+        "group": {
+          "kind": "test"
+        }
+      }
+    ]
+  }
