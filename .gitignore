@@ -8,3 +8,4 @@ active_state
 /solution.hpp
 /solution_benchmark.cpp
 /solution_test.cpp
+.vscode/settings.json

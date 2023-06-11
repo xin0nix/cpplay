@@ -31,7 +31,7 @@
         "dependsOn": [
           "build-release"
         ],
-        "command": "${workspaceFolder}/build/release/solution-test",
+        "command": "${workspaceFolder}/build/release/solution_test",
         "group": {
           "kind": "test",
           "isDefault": true
@@ -43,7 +43,7 @@
         "dependsOn": [
           "build-release"
         ],
-        "command": "${workspaceFolder}/build/release/solution-benchmark",
+        "command": "${workspaceFolder}/build/release/solution_benchmark",
         "group": {
           "kind": "test"
         }

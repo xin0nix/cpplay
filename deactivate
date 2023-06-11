@@ -6,7 +6,7 @@ if [[ ! -f active_state ]]; then
 fi
 
 for F in $(cat active_state); do
-    if [[ -f $F ]]; then
+    if [[ -L $F ]]; then
         rm -v $F
     fi
 done
