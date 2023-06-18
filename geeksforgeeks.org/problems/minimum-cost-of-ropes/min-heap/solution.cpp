@@ -1,5 +1,6 @@
 #include "solution.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <limits>
@@ -69,6 +70,7 @@ private:
 
 struct MinHeap : PriorityQueueInterface {
   MinHeap(Int input[], int inputSize) : arr(input, input + inputSize) {
+    std::make_heap(arr.begin(), arr.end());
     buildMinHeap();
   }
 
@@ -193,8 +195,10 @@ Int Solution::minCost(Int inputArray[], Int inputArraySize, SolutionKind sk) {
   switch (sk) {
   case SolutionKind::SK_MinHeap:
     priorityQueue = std::make_unique<MinHeap>(inputArray, inputArraySize);
+    break;
   case SolutionKind::SK_MapPQ:
     priorityQueue = std::make_unique<MapQueue>(inputArray, inputArraySize);
+    break;
   }
   Int totalCost = 0;
   while (priorityQueue->size() > 1) {

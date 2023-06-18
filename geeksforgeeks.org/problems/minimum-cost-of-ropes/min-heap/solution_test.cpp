@@ -74,9 +74,9 @@ TEST(SolutionTest, GFG_1) {
   TEST_MAP_QUEUE();
 }
 
-TEST(SolutionTest, Concurrent1) {
-  Int arr[] = {1, 2, 3, 4};
-  Int expected = 19;
+TEST(SolutionTest, Long) {
+  Int arr[] = {999, 66, 127, 5, 7, 999, 9, 4789, 11, 8};
+  Int expected = 10914;
   TEST_MIN_HEAP();
   TEST_MAP_QUEUE();
 }
