@@ -5,7 +5,7 @@
 using namespace std;
 
 int main() {
-  long long arr[] = {1, 3, 2, 4};
+  long long arr[] = {1, 2, 3};
   long long n = sizeof(arr) / sizeof(long long);
   std::cout << "n = " << n << "\n";
   Solution s;

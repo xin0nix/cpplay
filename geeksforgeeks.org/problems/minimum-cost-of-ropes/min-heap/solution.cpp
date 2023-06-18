@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -16,14 +17,57 @@ contains the lengths of the ropes.
 using Int = long long;
 
 struct PriorityQueueInterface {
+  PriorityQueueInterface() = default;
+  PriorityQueueInterface(const PriorityQueueInterface &) = delete;
+  PriorityQueueInterface(PriorityQueueInterface &&) = delete;
   virtual Int extractMin() = 0;
   virtual void insert(Int val) = 0;
   virtual int size() const = 0;
+  virtual void dump() const = 0;
+};
+
+struct MapQueue : PriorityQueueInterface {
+  int totalSize = 0;
+  MapQueue(Int input[], int inputSize) {
+    for (int i = 0; i < inputSize; ++i)
+      insert(input[i]);
+  }
+
+  virtual Int extractMin() final {
+    assert(pqMap.size());
+    auto minEl = pqMap.begin();
+    Int minVal = minEl->first;
+    minEl->second--;
+    if (minEl->second == 0)
+      pqMap.erase(minEl);
+    --totalSize;
+    return minVal;
+  }
+
+  virtual void insert(Int val) final {
+    pqMap[val]++;
+    ++totalSize;
+  }
+
+  virtual int size() const final {
+    assert(totalSize >= pqMap.size());
+    return totalSize;
+  }
+
+  virtual void dump() const final {
+    if (size() == 0)
+      std::cout << "empty\n";
+    for (auto [val, count] : pqMap)
+      for (int i = 0; i < count; ++i)
+        std::cout << val << ", ";
+    std::cout << "\n";
+  }
+
+private:
+  std::map<Int, int> pqMap;
 };
 
 struct MinHeap : PriorityQueueInterface {
-  MinHeap(const MinHeap &) = delete;
-  MinHeap(MinHeap &&) = delete;
   MinHeap(Int input[], int inputSize) : arr(input, input + inputSize) {
     buildMinHeap();
   }
@@ -127,7 +171,7 @@ struct MinHeap : PriorityQueueInterface {
 
   virtual int size() const final { return arr.size(); }
   bool empty() const { return arr.empty(); }
-  void dump() const {
+  virtual void dump() const final {
     for (Int a : arr)
       std::cout << a << ", ";
     std::cout << std::endl;
@@ -138,11 +182,20 @@ private:
   std::vector<Int> arr;
 };
 
-Int Solution::minCost(Int inputArray[], Int inputArraySize) {
+// Implementation notes
+// Performance on geeks4geeks:
+// - min heap takes 4.16 to finish
+// - map-based takes 1.8 (x2 boost!)
+Int Solution::minCost(Int inputArray[], Int inputArraySize, SolutionKind sk) {
   if (inputArraySize < 2)
     return 0;
   std::unique_ptr<PriorityQueueInterface> priorityQueue = nullptr;
-  priorityQueue = std::make_unique<MinHeap>(inputArray, inputArraySize);
+  switch (sk) {
+  case SolutionKind::SK_MinHeap:
+    priorityQueue = std::make_unique<MinHeap>(inputArray, inputArraySize);
+  case SolutionKind::SK_MapPQ:
+    priorityQueue = std::make_unique<MapQueue>(inputArray, inputArraySize);
+  }
   Int totalCost = 0;
   while (priorityQueue->size() > 1) {
     Int shortest = priorityQueue->extractMin();
