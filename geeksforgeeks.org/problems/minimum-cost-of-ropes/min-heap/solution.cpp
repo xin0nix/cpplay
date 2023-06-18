@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <vector>
 
 /*
@@ -14,7 +15,13 @@ contains the lengths of the ropes.
 
 using Int = long long;
 
-struct MinHeap {
+struct PriorityQueueInterface {
+  virtual Int extractMin() = 0;
+  virtual void insert(Int val) = 0;
+  virtual int size() const = 0;
+};
+
+struct MinHeap : PriorityQueueInterface {
   MinHeap(const MinHeap &) = delete;
   MinHeap(MinHeap &&) = delete;
   MinHeap(Int input[], int inputSize) : arr(input, input + inputSize) {
@@ -81,7 +88,7 @@ struct MinHeap {
 
   /// @brief Extracts and returns the minimum element of the heap
   /// @return
-  Int extractMin() {
+  virtual Int extractMin() final {
     assert(!arr.empty());
     Int min = arr[0];
     std::swap(arr[0], arr[arr.size() - 1]);
@@ -111,14 +118,14 @@ struct MinHeap {
 
   /// @brief Insert value into the min heap
   /// @param val - new value
-  void insert(Int val) {
+  virtual void insert(Int val) final {
     // We insert the maximum value possible to ensure that the following
     // property holds: arr[i] >= newVal
     arr.push_back(std::numeric_limits<Int>::max());
     decrease(arr.size() - 1, val);
   }
 
-  int size() const { return arr.size(); }
+  virtual int size() const final { return arr.size(); }
   bool empty() const { return arr.empty(); }
   void dump() const {
     for (Int a : arr)
@@ -134,14 +141,15 @@ private:
 Int Solution::minCost(Int inputArray[], Int inputArraySize) {
   if (inputArraySize < 2)
     return 0;
-  MinHeap minHeap(inputArray, inputArraySize);
+  std::unique_ptr<PriorityQueueInterface> priorityQueue = nullptr;
+  priorityQueue = std::make_unique<MinHeap>(inputArray, inputArraySize);
   Int totalCost = 0;
-  while (minHeap.size() > 1) {
-    Int shortest = minHeap.extractMin();
-    Int nextShortest = minHeap.extractMin();
+  while (priorityQueue->size() > 1) {
+    Int shortest = priorityQueue->extractMin();
+    Int nextShortest = priorityQueue->extractMin();
     Int newPiece = shortest + nextShortest;
     totalCost += newPiece;
-    minHeap.insert(newPiece);
+    priorityQueue->insert(newPiece);
   }
   return totalCost;
 }
