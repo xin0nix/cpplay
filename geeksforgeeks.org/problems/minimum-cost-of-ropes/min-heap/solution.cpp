@@ -27,6 +27,31 @@ struct PriorityQueueInterface {
   virtual void dump() const = 0;
 };
 
+struct StdMinHeap : PriorityQueueInterface {
+  StdMinHeap(Int input[], int inputSize) : arr(input, input + inputSize) {
+    std::make_heap(arr.begin(), arr.end(), std::greater<>{});
+  }
+
+  virtual Int extractMin() final {
+    Int min = arr.front();
+    std::pop_heap(arr.begin(), arr.end(), std::greater<>{});
+    arr.pop_back();
+    return min;
+  }
+  virtual void insert(Int val) final {
+    arr.push_back(val);
+    std::push_heap(arr.begin(), arr.end(), std::greater<>{});
+  }
+  virtual int size() const final { return arr.size(); }
+  virtual void dump() const final {
+    for (Int a : arr)
+      std::cout << a << ", ";
+    std::cout << std::endl;
+  }
+
+  std::vector<Int> arr;
+};
+
 struct MapQueue : PriorityQueueInterface {
   int totalSize = 0;
   MapQueue(Int input[], int inputSize) {
@@ -189,16 +214,24 @@ private:
 // - min heap takes 4.16 to finish
 // - map-based takes 1.8 (x2 boost!)
 Int Solution::minCost(Int inputArray[], Int inputArraySize, SolutionKind sk) {
+  Int *arrClone = new Int[inputArraySize];
+  for (int i = 0; i < inputArraySize; ++i)
+    arrClone[i] = inputArray[i];
   if (inputArraySize < 2)
     return 0;
   std::unique_ptr<PriorityQueueInterface> priorityQueue = nullptr;
   switch (sk) {
   case SolutionKind::SK_MinHeap:
-    priorityQueue = std::make_unique<MinHeap>(inputArray, inputArraySize);
+    priorityQueue = std::make_unique<MinHeap>(arrClone, inputArraySize);
     break;
   case SolutionKind::SK_MapPQ:
-    priorityQueue = std::make_unique<MapQueue>(inputArray, inputArraySize);
+    priorityQueue = std::make_unique<MapQueue>(arrClone, inputArraySize);
     break;
+  case SolutionKind::SK_STDMinHeap:
+    priorityQueue = std::make_unique<StdMinHeap>(arrClone, inputArraySize);
+    break;
+  default:
+    abort();
   }
   Int totalCost = 0;
   while (priorityQueue->size() > 1) {
@@ -208,5 +241,6 @@ Int Solution::minCost(Int inputArray[], Int inputArraySize, SolutionKind sk) {
     totalCost += newPiece;
     priorityQueue->insert(newPiece);
   }
+  delete[](arrClone);
   return totalCost;
 }

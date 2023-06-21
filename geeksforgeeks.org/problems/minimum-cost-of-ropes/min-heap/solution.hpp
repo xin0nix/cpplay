@@ -10,7 +10,20 @@
 // lengths. The task is to connect the ropes with minimum cost. Given N size
 // array arr[] contains the lengths of the ropes.
 
-enum class SolutionKind { SK_MinHeap = 0, SK_MapPQ };
+// I launched each kind of solution on geeks4geeks (in different times
+// intervals) and got odd results which kind of correlate with the google
+// benchmark, but not exactly.
+// Oddly enough, the fastest solution does not involve using heap at all.
+// On the second place is a "custom" min heap implementation.
+// And the slowest one is the std heap (maybe because of the abstractions?).
+enum class SolutionKind {
+  // ~ 4,9 on geeks4geeks
+  SK_MinHeap,
+  // ~ 5,7 on geeks4geeks
+  SK_STDMinHeap,
+  // ~ 1.8 on geeks4geeks, why?
+  SK_MapPQ
+};
 
 class Solution {
   // Function to return the minimum cost of connecting the ropes.

@@ -9,6 +9,6 @@ int main() {
   long long n = sizeof(arr) / sizeof(long long);
   std::cout << "n = " << n << "\n";
   Solution s;
-  long long actual = s.minCost(arr, n);
+  long long actual = s.minCost(arr, n, SolutionKind::SK_STDMinHeap);
   std::cout << "Result " << actual << std::endl;
 }
