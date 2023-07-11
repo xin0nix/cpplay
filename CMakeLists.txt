@@ -25,7 +25,7 @@ FetchContent_MakeAvailable(benchmark)
 
 # Add test cpp file
 add_executable(solution_test solution_test.cpp solution.cpp)
-target_link_libraries(solution_test gtest_main Threads::Threads)
+target_link_libraries(solution_test gtest_main gmock_main Threads::Threads)
 
 # Add benchmark cpp file
 add_executable(solution_benchmark solution_benchmark.cpp solution.cpp)
