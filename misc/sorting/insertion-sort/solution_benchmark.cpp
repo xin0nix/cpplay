@@ -1,7 +1,6 @@
 #include "solution.hpp"
 #include <benchmark/benchmark.h>
 #include <execution>
-#include <type_traits>
 #include <vector>
 
 struct MySort {
