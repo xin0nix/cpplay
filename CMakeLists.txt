@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-add_compile_options(-Wall -Wextra -Wpedantic)
+# add_compile_options(-Wall -Werror)
 
 # Fetch GTest
 include(FetchContent)
