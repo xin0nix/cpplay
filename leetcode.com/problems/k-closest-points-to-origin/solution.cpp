@@ -5,35 +5,23 @@
 
 // Leetcode score:
 // Final leet scope: Accepted
-// Runtime: 344ms Beats 39.02 % of users with C++
-// Memory: 60.12mb Beats 92.10 % of users with C++
+// Runtime: 290ms Beats 47.72% of users with C++
+// Memory: 57.02mb Beats 95.44% of users with C++
 std::vector<std::vector<int>>
 MinHeapSolution::kClosest(std::vector<std::vector<int>> &points, int k) {
-  struct Point {
-    int idx;
-    unsigned long distance;
-    Point() = delete;
-    Point(const Point &) = delete;
-    Point(Point &&) = default;
-    Point &operator=(Point &&) = default;
-    Point &operator=(const Point &) = delete;
-    Point(int idx, const std::vector<int> &xy)
-        : idx(idx), distance(xy[0] * xy[0] + xy[1] * xy[1]) {}
-    bool operator<(const Point &other) const {
-      // it's > because of the min heap
-      return distance > other.distance;
-    }
+  auto distance = [](const vector<int> &xy) -> unsigned long {
+    return xy[0] * xy[0] + xy[1] * xy[1];
   };
-  std::deque<Point> heap;
-  for (int i = 0; i < points.size(); ++i)
-    heap.emplace_back(i, points[i]);
-  std::make_heap(heap.begin(), heap.end());
+  auto cmp = [&distance](const auto &a, const auto &b) -> bool {
+    return distance(a) > distance(b); // opposite to default max-heap
+  };
+  std::make_heap(points.begin(), points.end(), cmp);
   std::vector<std::vector<int>> result;
   result.reserve(k);
   for (int i = 0; i < k; ++i) {
-    std::pop_heap(heap.begin(), heap.end());
-    result.push_back(points[heap.back().idx]);
-    heap.pop_back();
+    result.push_back(points.front());
+    std::pop_heap(points.begin(), points.end(), cmp);
+    points.pop_back();
   }
   return result;
 }
