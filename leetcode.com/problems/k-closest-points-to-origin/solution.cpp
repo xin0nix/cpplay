@@ -3,10 +3,6 @@
 #include <algorithm>
 #include <deque>
 
-// Leetcode score:
-// Final leet scope: Accepted
-// Runtime: 290ms Beats 47.72% of users with C++
-// Memory: 57.02mb Beats 95.44% of users with C++
 std::vector<std::vector<int>>
 MinHeapSolution::kClosest(std::vector<std::vector<int>> &points, int k) {
   auto distance = [](const vector<int> &xy) -> unsigned long {
@@ -26,9 +22,28 @@ MinHeapSolution::kClosest(std::vector<std::vector<int>> &points, int k) {
   return result;
 }
 
-// Leetcode score:
-// Runtime: 197ms, Beats 96.29 % of users with C++
-// Memory Details: 57.15mb, Beats 94.32 % of users with C++
+std::vector<std::vector<int>>
+MaxHeapSolution::kClosest(std::vector<std::vector<int>> &points, int k) {
+  auto distance = [](const vector<int> &xy) -> unsigned long {
+    return xy[0] * xy[0] + xy[1] * xy[1];
+  };
+  auto cmp = [&distance](const auto &a, const auto &b) -> bool {
+    return distance(a) < distance(b); // it's a max-heap, cmp = lt
+  };
+  std::deque<std::vector<int>> heap;
+  for (auto &pt : points) {
+    heap.push_back(std::move(pt)); // ok?
+    std::push_heap(heap.begin(), heap.end(), cmp);
+    if (heap.size() > (size_t)k) {
+      std::pop_heap(heap.begin(), heap.end(), cmp);
+      heap.pop_back();
+    }
+  }
+  std::vector<std::vector<int>> result;
+  std::copy(heap.begin(), heap.end(), std::back_inserter(result));
+  return result;
+}
+
 std::vector<std::vector<int>>
 NthElementSolution::kClosest(std::vector<std::vector<int>> &points, int k) {
   auto distance = [](const vector<int> &xy) -> unsigned long {

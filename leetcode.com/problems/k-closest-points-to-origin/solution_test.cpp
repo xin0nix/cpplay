@@ -12,7 +12,8 @@ template <typename T> struct SolutionTest : public testing::Test {
 };
 
 using testing::Types;
-typedef Types<MinHeapSolution, NthElementSolution> Implementations;
+typedef Types<MinHeapSolution, MaxHeapSolution, NthElementSolution>
+    Implementations;
 TYPED_TEST_SUITE(SolutionTest, Implementations);
 
 TYPED_TEST(SolutionTest, Test1) {

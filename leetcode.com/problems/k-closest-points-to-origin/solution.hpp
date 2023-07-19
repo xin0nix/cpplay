@@ -17,12 +17,33 @@
 
 using namespace std;
 
-struct MinHeapSolution {
-  vector<vector<int>> kClosest(vector<vector<int>> &points, int k);
+struct KClosestSolutionInterface {
+  virtual vector<vector<int>> kClosest(vector<vector<int>> &points, int k) = 0;
 };
 
-struct NthElementSolution {
-  vector<vector<int>> kClosest(vector<vector<int>> &points, int k);
+// Leetcode score:
+// Final leet scope: Accepted
+// Runtime: 290ms Beats 47.72 %
+// Memory: 57.02mb Beats 95.44 %
+struct MinHeapSolution : KClosestSolutionInterface {
+  virtual vector<vector<int>> kClosest(vector<vector<int>> &points,
+                                       int k) override final;
+};
+
+// Leetcode score:
+// Runtime: 441ms Beats 17.96 %
+// Memory: 64.39mb Beats 67.17 %
+struct MaxHeapSolution : KClosestSolutionInterface {
+  virtual vector<vector<int>> kClosest(vector<vector<int>> &points,
+                                       int k) override final;
+};
+
+// Leetcode score:
+// Runtime: 197ms, Beats 96.29 %
+// Memory Details: 57.15mb, Beats 94.32 %
+struct NthElementSolution : KClosestSolutionInterface {
+  virtual vector<vector<int>> kClosest(vector<vector<int>> &points,
+                                       int k) override final;
 };
 
 class Solution {
