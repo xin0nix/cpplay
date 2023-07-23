@@ -5,11 +5,10 @@
 int main() {
   std::vector<int> numbers;
   int n;
-  while (std::cin.eof()) {
-    std::cin >> n;
+  while (std::cin >> n) {
     numbers.push_back(n);
   }
-  SetSolution solution;
+  Solution solution;
   for (int n : numbers)
     std::cout << n << ", ";
   std::cout << std::endl;
