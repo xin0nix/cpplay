@@ -12,7 +12,7 @@ int main() {
   for (int n : numbers)
     std::cout << n << ", ";
   std::cout << std::endl;
-  int result = solution.containsDuplicate(numbers);
+  int result = solution.solve(numbers);
   std::cout << "result: " << result << std::endl;
   // TODO: Print the result or do something with it.
   return 0;
