@@ -2,7 +2,7 @@
 
 #include <vector>
 
-// Problem statement: https://leetcode.com/problems/maximum-subarray/
+// Problem statement: TODO
 
 struct SolutionImpl {
   virtual bool solve(std::vector<int> &nums) = 0;
