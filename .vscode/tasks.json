@@ -54,6 +54,16 @@
       "group": {
         "kind": "test"
       }
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "rm",
+      "args": [
+        "-rvf",
+        "${workspaceFolder}/build/"
+      ],
+      "group": "build"
     }
   ]
 }
