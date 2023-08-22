@@ -7,7 +7,55 @@
 #include <set>
 
 std::vector<std::vector<int>>
-BasicSolution::pacificAtlantic(std::vector<std::vector<int>> &heights) {
+DepthFirstSolution::pacificAtlantic(std::vector<std::vector<int>> &heights) {
+  using Point = std::pair<int, int>;
+  using Set = std::set<Point>;
+  const int ROWS = heights.size();
+  const int COLS = heights[0].size();
+  struct {
+    const int ROWS;
+    const int COLS;
+    const std::vector<std::vector<int>> &heights;
+    Set seen;
+    void tryReach(int r, int c, int prevHeight) {
+      if (seen.count({r, c}))
+        return;
+      if (r >= 0 && c >= 0 && r < ROWS && c < COLS &&
+          heights[r][c] >= prevHeight)
+        visit(r, c);
+    };
+    void visit(int r, int c) {
+      seen.emplace(r, c);
+      int h = heights[r][c];
+      tryReach(r, c + 1, h);
+      tryReach(r - 1, c, h);
+      tryReach(r, c - 1, h);
+      tryReach(r + 1, c, h);
+    };
+  } topLeft{ROWS, COLS, heights}, botRight{ROWS, COLS, heights};
+  for (int i = 0; i < ROWS; ++i) {
+    topLeft.visit(i, 0);
+    botRight.visit(i, COLS - 1);
+  }
+  for (int j = 0; j < COLS; ++j) {
+    topLeft.visit(0, j);
+    botRight.visit(ROWS - 1, j);
+  }
+  std::vector<Point> intersection;
+  std::set_intersection(topLeft.seen.begin(), topLeft.seen.end(),
+                        botRight.seen.begin(), botRight.seen.end(),
+                        std::back_inserter(intersection));
+  std::vector<std::vector<int>> results;
+  std::transform(intersection.begin(), intersection.end(),
+                 std::back_inserter(results),
+                 [](const Point &p) -> std::vector<int> {
+                   return {p.first, p.second};
+                 });
+  return results;
+}
+
+std::vector<std::vector<int>>
+BreadthFirstSolution::pacificAtlantic(std::vector<std::vector<int>> &heights) {
   using Point = std::pair<int, int>;
   using Queue = std::deque<Point>;
   using Set = std::set<Point>;
@@ -70,5 +118,5 @@ BasicSolution::pacificAtlantic(std::vector<std::vector<int>> &heights) {
 
 std::vector<std::vector<int>>
 Solution::pacificAtlantic(std::vector<std::vector<int>> &heights) {
-  return BasicSolution().pacificAtlantic(heights);
+  return DepthFirstSolution().pacificAtlantic(heights);
 }

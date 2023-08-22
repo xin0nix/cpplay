@@ -11,7 +11,15 @@ struct SolutionImpl {
 // Leetcode score:
 // Runtime 56ms Beats 28.52 %
 // Memory 21.37MB Beats 24.74 %
-struct BasicSolution : SolutionImpl {
+struct BreadthFirstSolution : SolutionImpl {
+  virtual std::vector<std::vector<int>>
+  pacificAtlantic(std::vector<std::vector<int>> &heights) override final;
+};
+
+// Letcode score:
+// Runtime 56ms Beats 27.95 %
+// Memory 25.94MB Beats 15.41 %
+struct DepthFirstSolution : SolutionImpl {
   virtual std::vector<std::vector<int>>
   pacificAtlantic(std::vector<std::vector<int>> &heights) override final;
 };

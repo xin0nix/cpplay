@@ -14,10 +14,7 @@ static void BM_TemplatedSolution(benchmark::State &state) {
     state.PauseTiming();
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < n; ++j)
-        if (i % 1 || i % 2 || j % 4)
-          grid[i][j] = i * j;
-        else
-          grid[i][j] = -i * j;
+        grid[i][j] = 1;
     benchmark::DoNotOptimize(grid);
     state.ResumeTiming();
     auto res = solution.pacificAtlantic(grid);
@@ -26,10 +23,16 @@ static void BM_TemplatedSolution(benchmark::State &state) {
   state.SetComplexityN(n * n);
 }
 
-BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BasicSolution)
+BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BreadthFirstSolution)
     ->RangeMultiplier(2)
     ->Range(2, 64)
     ->Unit(benchmark::kMicrosecond)
-    ->Complexity();
+    ->Complexity(benchmark::oN);
+
+BENCHMARK_TEMPLATE1(BM_TemplatedSolution, DepthFirstSolution)
+    ->RangeMultiplier(2)
+    ->Range(2, 64)
+    ->Unit(benchmark::kMicrosecond)
+    ->Complexity(benchmark::oN);
 
 BENCHMARK_MAIN();
