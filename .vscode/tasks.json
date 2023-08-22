@@ -45,6 +45,18 @@
       }
     },
     {
+      "label": "test-release",
+      "type": "shell",
+      "dependsOn": [
+        "build-release"
+      ],
+      "command": "${workspaceFolder}/build/release/solution_test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    },
+    {
       "label": "benchmark-release",
       "type": "shell",
       "dependsOn": [
