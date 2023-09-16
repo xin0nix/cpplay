@@ -22,11 +22,18 @@ const size_t kThousand = 1000;
 const size_t kMillion = kThousand * kThousand;
 const size_t kBillion = kThousand * kMillion;
 
-// 0.77N, rms 2%
+// 1N, rms 1%
 BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BottomUpSolution)
     ->RangeMultiplier(10)
     ->Range(1, 100 * kThousand)
     ->Unit(benchmark::kMicrosecond)
-    ->Complexity(benchmark::oN);
+    ->Complexity();
+
+// 4 NlgN, rms 2% (lg probably comes from rehashing)
+BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BFSolution)
+    ->RangeMultiplier(10)
+    ->Range(1, 100 * kThousand)
+    ->Unit(benchmark::kMicrosecond)
+    ->Complexity();
 
 BENCHMARK_MAIN();

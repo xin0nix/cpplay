@@ -13,6 +13,10 @@ struct BottomUpSolution : SolutionImpl {
   virtual int minCostClimbingStairs(std::vector<int> &cost) override final;
 };
 
+struct BFSolution : SolutionImpl {
+  virtual int minCostClimbingStairs(std::vector<int> &cost) override final;
+};
+
 struct Solution {
   int minCostClimbingStairs(std::vector<int> cost);
 };

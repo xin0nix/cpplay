@@ -1,6 +1,7 @@
 #include "solution.hpp"
 
 #include <algorithm>
+#include <unordered_map>
 
 int BottomUpSolution::minCostClimbingStairs(std::vector<int> &cost) {
   // We go from right to the left, picking jump with the lower cost between the
@@ -11,14 +12,34 @@ int BottomUpSolution::minCostClimbingStairs(std::vector<int> &cost) {
   // from the 0th, or 1th element, which is the same as making 1 or 2 jump
 
   int a = cost.front(), b = 0;
+  // we can either make single jump, or double from cur to a / b
   for (size_t i = 1; i != cost.size(); ++i) {
     int c = cost[i];
-    // we can either make single jump, or double from cur to a / b
-    c = std::min(c + a, c + b);
+    c += std::min(a, b);
     std::swap(a, b);
     a = c;
   }
   return std::min(a, b);
+}
+
+int BFSolution::minCostClimbingStairs(std::vector<int> &cost) {
+  struct {
+    const std::vector<int> &cost;
+    std::unordered_map<size_t, int> memo;
+    int visit(size_t start = 0) {
+      if (start >= cost.size())
+        return 0; // we can stay on the top for free
+      if (start == cost.size() - 1)
+        return cost[start]; // only the one option here
+      auto it = memo.find(start);
+      if (it != memo.end())
+        return it->second;
+      int q = cost[start] + std::min(visit(start + 1), visit(start + 2));
+      memo[start] = q;
+      return q;
+    }
+  } dfs{cost};
+  return std::min(dfs.visit(), dfs.visit(1));
 }
 
 int Solution::minCostClimbingStairs(std::vector<int> cost) {
