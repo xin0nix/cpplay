@@ -11,15 +11,17 @@ int BottomUpSolution::minCostClimbingStairs(std::vector<int> &cost) {
   // Note: the algorithm works in both directions, because we can start either
   // from the 0th, or 1th element, which is the same as making 1 or 2 jump
 
-  int a = cost.front(), b = 0;
-  // we can either make single jump, or double from cur to a / b
+  int l = 0, r = cost.front();
+  // we can either make single jump, or double from cur to l, r
   for (size_t i = 1; i != cost.size(); ++i) {
     int c = cost[i];
-    c += std::min(a, b);
-    std::swap(a, b);
-    a = c;
+    c += std::min(l, r);
+    // l, r, c
+    l = r;
+    // _, l, c+min(l, r), -> next iteration
+    r = c;
   }
-  return std::min(a, b);
+  return std::min(l, r);
 }
 
 int BFSolution::minCostClimbingStairs(std::vector<int> &cost) {
