@@ -12,6 +12,10 @@ struct BFSolution : SolutionImpl {
   virtual int rob(std::vector<int> &nums) override final;
 };
 
+struct BottomUpSolution : SolutionImpl {
+  virtual int rob(std::vector<int> &nums) override final;
+};
+
 struct Solution {
   int rob(std::vector<int> &&nums);
 };

@@ -8,7 +8,7 @@ template <class T> struct SolutionTest : public testing::Test {
   T &getSolution() { return solution; }
 };
 
-typedef Types<BFSolution> Implementations;
+typedef Types<BFSolution, BottomUpSolution> Implementations;
 
 TYPED_TEST_SUITE(SolutionTest, Implementations);
 

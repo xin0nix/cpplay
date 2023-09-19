@@ -25,4 +25,15 @@ int BFSolution::rob(std::vector<int> &nums) {
   return recursive.visit();
 }
 
+int BottomUpSolution::rob(std::vector<int> &nums) {
+  int d2 = 0, d1 = 0;
+  for (int n : nums) {
+    // [n, .., d2] or [.., d1]
+    int best = std::max(n + d2, d1);
+    d2 = d1;
+    d1 = best;
+  }
+  return d1;
+}
+
 int Solution::rob(std::vector<int> &&nums) { return BFSolution().rob(nums); }

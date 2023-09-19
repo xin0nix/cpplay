@@ -25,7 +25,13 @@ const size_t kBillion = kThousand * kMillion;
 
 BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BFSolution)
     ->RangeMultiplier(10)
-    ->Range(1, kMillion)
+    ->Range(1, 100 * kThousand) // overl million we get stack overflow
+    ->Unit(benchmark::kMicrosecond)
+    ->Complexity();
+
+BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BottomUpSolution)
+    ->RangeMultiplier(10)
+    ->Range(1, 100 * kThousand)
     ->Unit(benchmark::kMicrosecond)
     ->Complexity();
 
