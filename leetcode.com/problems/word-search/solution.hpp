@@ -12,8 +12,8 @@ struct SolutionImpl {
 };
 
 // Solved on the first try without any help
-// Runtime: 465 ms, beats 59%
-// Memory: 8.44 MB, beats 9.45%
+// Runtime: 270 ms, beats 90%
+// Memory: 8.33 MB, beats 13%
 struct BasicSolution : SolutionImpl {
   virtual bool exist(vector<vector<char>> &board, string word) override final;
 };

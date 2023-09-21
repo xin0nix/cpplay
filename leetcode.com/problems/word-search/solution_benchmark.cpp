@@ -28,7 +28,7 @@ const size_t kThousand = 1000;
 const size_t kMillion = kThousand * kThousand;
 const size_t kBillion = kThousand * kMillion;
 
-// 1.77 N (suspiciously low)
+// 1.66 N (suspiciously low)
 BENCHMARK_TEMPLATE1(BM_TemplatedSolution, BasicSolution)
     ->RangeMultiplier(10)
     ->Range(1, kThousand)
