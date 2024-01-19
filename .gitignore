@@ -1,11 +1,6 @@
 # IDE and CI
 build/
+.vscode
 
-# Active state
-active_state
-/main.cpp
-/solution.cpp
-/solution.hpp
-/solution_benchmark.cpp
-/solution_test.cpp
-.vscode/settings.json
+/bazel-*
+/MODULE.bazel.*
