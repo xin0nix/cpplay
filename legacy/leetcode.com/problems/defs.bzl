@@ -1,46 +1,56 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:subpackages.bzl", "subpackages")
 
-def leetcode_problem(name):
-    native.cc_library(
-        name = "{}_lib".format(name),
-        srcs = [
-            paths.join(name, "solution.cpp"),
-            paths.join(name, "solution.hpp"),
-        ],
-        hdrs = [
-            paths.join(name, "solution.hpp"),
-        ],
-    )
+def build_all_leetcode_problems(name = None):
+    """Looks for all the subpackages and builds them in similar fashion. Deprecated!
 
-    native.cc_test(
-        name = "{}_test".format(name),
-        size = "small",
-        srcs = [
-            paths.join(name, "solution_test.cpp"),
-        ],
-        deps = [
-            ":{}_lib".format(name),
-            "@com_google_googletest//:gtest_main",
-        ],
-    )
+    Args:
+        name: not used
+    """
+    problems = subpackages.all()
+    for name in problems:
+        file_name = paths.basename(name)
+        native.cc_library(
+            name = "{}_lib".format(file_name),
+            srcs = [
+                "{}:solution.cpp".format(name),
+                "{}:solution.hpp".format(name),
+            ],
+            hdrs = [
+                "{}:solution.hpp".format(name),
+            ],
+        )
 
-    native.cc_binary(
-        name = "{}_benchmark".format(name),
-        srcs = [
-            paths.join(name, "solution_benchmark.cpp"),
-        ],
-        deps = [
-            ":{}_lib".format(name),
-            "@com_google_google_benchmark//:benchmark_main",
-        ],
-    )
+        native.cc_test(
+            name = "{}_test".format(file_name),
+            size = "small",
+            srcs = [
+                "{}:solution_test.cpp".format(name),
+            ],
+            deps = [
+                ":{}_lib".format(file_name),
+                "@com_google_googletest//:gtest_main",
+            ],
+        )
 
-    native.cc_binary(
-        name = "{}_main".format(name),
-        srcs = [
-            paths.join(name, "main.cpp"),
-        ],
-        deps = [
-            ":{}_lib".format(name),
-        ],
-    )
+        native.cc_test(
+            name = "{}_benchmark".format(file_name),
+            tags = ["manual"],
+            srcs = [
+                "{}:solution_benchmark.cpp".format(name),
+            ],
+            deps = [
+                ":{}_lib".format(file_name),
+                "@com_google_google_benchmark//:benchmark_main",
+            ],
+        )
+
+        native.cc_binary(
+            name = "{}_main".format(file_name),
+            srcs = [
+                "{}:main.cpp".format(name),
+            ],
+            deps = [
+                ":{}_lib".format(file_name),
+            ],
+        )
