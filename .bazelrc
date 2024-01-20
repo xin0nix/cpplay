@@ -1,2 +1,4 @@
-common --cxxopt=-std=c++17
-test --test_output=all --test_timeout=5
+common -c opt
+common --cxxopt=-std=c++20
+common --repo_env=CC=/usr/bin/clang
+test --test_output=all --test_timeout=30

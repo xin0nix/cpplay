@@ -3,8 +3,8 @@
 #include <unordered_map>
 
 std::vector<int> MapSolution::twoSum(std::vector<int> &nums, int target) {
-  std::unordered_map<int, size_t> seen;
-  for (size_t i = 0; i < nums.size(); ++i) {
+  std::unordered_map<int, std::size_t> seen;
+  for (std::size_t i = 0; i < nums.size(); ++i) {
     int n = nums[i];
     auto twin = seen.find(target - n);
     if (twin != seen.end())
