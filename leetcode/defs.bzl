@@ -12,7 +12,7 @@ def build_all_leetcode_problems(name = None):
         file_name = paths.basename(name)
 
         native.cc_test(
-            name = "{}_test".format(file_name),
+            name = "{}-test".format(file_name),
             size = "small",
             srcs = [
                 "{}:solution_test.cpp".format(name),

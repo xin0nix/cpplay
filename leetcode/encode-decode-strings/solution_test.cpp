@@ -41,7 +41,7 @@ public:
   }
 };
 
-class SolutionTest : public ::testing::Test {
+class EncDecStrsTest : public ::testing::Test {
 protected:
   void check(vector<string> &strs) {
     Solution s;
@@ -51,27 +51,27 @@ protected:
   }
 };
 
-TEST_F(SolutionTest, Empty) {
+TEST_F(EncDecStrsTest, Empty) {
   vector<string> strs;
   ASSERT_NO_FATAL_FAILURE(check(strs));
 }
 
-TEST_F(SolutionTest, EmptyMultiple) {
+TEST_F(EncDecStrsTest, EmptyMultiple) {
   vector<string> strs{"", ";", ""};
   ASSERT_NO_FATAL_FAILURE(check(strs));
 }
 
-TEST_F(SolutionTest, Basic0) {
+TEST_F(EncDecStrsTest, Basic0) {
   vector<string> strs{"lint", "code", "love", "you"};
   ASSERT_NO_FATAL_FAILURE(check(strs));
 }
 
-TEST_F(SolutionTest, Basic1) {
+TEST_F(EncDecStrsTest, Basic1) {
   vector<string> strs{"we", "say", ":", "yes"};
   ASSERT_NO_FATAL_FAILURE(check(strs));
 }
 
-TEST_F(SolutionTest, Tricky) {
+TEST_F(EncDecStrsTest, Tricky) {
   vector<string> strs{";;;", "2;;", "0;", "43;1342;143234;44;4;4;4;4;"};
   ASSERT_NO_FATAL_FAILURE(check(strs));
 }
