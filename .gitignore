@@ -1,6 +1,6 @@
 # IDE and CI
 build/
-.vscode
+.vscode/
 
 /bazel-*
 /MODULE.bazel.*
