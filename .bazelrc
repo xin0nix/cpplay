@@ -1,6 +1,7 @@
 common -c opt
 common --cxxopt=-std=c++20
 common --cxxopt=-Wall
+common --repo_env="CC=clang"
 common --repo_env="CXX=clang++"
 common --repo_env="LD=lld"
 bazel build --linkopt="-fuse-ld=lld" 
