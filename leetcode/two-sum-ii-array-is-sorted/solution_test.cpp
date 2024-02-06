@@ -66,8 +66,7 @@ struct SolutionTest : public testing::Test {
   S &getSolution() { return solution; }
 };
 
-typedef testing::Types<std::vector<int>, std::list<int>, std::deque<int>>
-    Implementations;
+using Implementations = testing::Types<std::vector<int>, std::list<int>, std::deque<int>>;
 
 TYPED_TEST_SUITE(SolutionTest, Implementations);
 

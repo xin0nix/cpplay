@@ -8,7 +8,7 @@
 using namespace std;
 
 struct Solution {
-  int characterReplacement(string_view s, const int k) const noexcept {
+  [[nodiscard]] int characterReplacement(string_view s, const int k) const noexcept {
     array<int, 26> freq = {};
     int res = 0;
     for (int l = 0, r = 0; r < s.size(); ++r) {

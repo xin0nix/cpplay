@@ -11,7 +11,7 @@ class MinStack {
   stack<pair<int, int>> vals;
 
 public:
-  MinStack() {}
+  MinStack() = default;
 
   void push(int val) {
     if (vals.empty()) [[unlikely]]
