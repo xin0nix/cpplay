@@ -19,5 +19,6 @@ def build_all_leetcode_problems(name = None):
             ],
             deps = [
                 "@googletest//:gtest_main",
+                "@fmt",
             ],
         )

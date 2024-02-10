@@ -3,6 +3,7 @@ module(name = "cpplay")
 # from the registry
 bazel_dep(name = "googletest", version = "1.14.0")
 bazel_dep(name = "google_benchmark", version = "1.8.3")
+bazel_dep(name = "fmt", version = "10.2.1")
 
 HEDRON_COMMIT = "9335ff4470f3e9238e3aa81aff4b72c528e16c38"
 
