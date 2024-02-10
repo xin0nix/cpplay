@@ -29,7 +29,7 @@ def build_all_leetcode_problems(name = None):
             ],
             deps = [
                 ":{}_lib".format(file_name),
-                "@com_google_googletest//:gtest_main",
+                "@googletest//:gtest_main",
             ],
         )
 
@@ -41,7 +41,7 @@ def build_all_leetcode_problems(name = None):
             ],
             deps = [
                 ":{}_lib".format(file_name),
-                "@com_google_google_benchmark//:benchmark_main",
+                "@google_benchmark//:benchmark_main",
             ],
         )
 

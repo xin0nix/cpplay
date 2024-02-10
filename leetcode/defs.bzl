@@ -18,6 +18,6 @@ def build_all_leetcode_problems(name = None):
                 "{}:solution_test.cpp".format(name),
             ],
             deps = [
-                "@com_google_googletest//:gtest_main",
+                "@googletest//:gtest_main",
             ],
         )
