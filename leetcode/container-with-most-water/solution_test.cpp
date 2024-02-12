@@ -4,21 +4,22 @@
 using namespace std;
 
 class Solution {
-  // too slow, exceeds the time limit
-  [[nodiscard]] int bruteForce(const vector<int> &heights) const noexcept {
-    const int size = heights.size();
+  [[nodiscard]] int twoPointers(const vector<int> &heights) const noexcept {
+    int l = 0;
+    int r = heights.size() - 1;
     int maxArea = 0;
-    for (int left = 0; left < size; ++left) {
-      for (int right = left + 1; right < size; ++right) {
-        const int minHeight = min(heights[left], heights[right]);
-        const int width = right - left;
-        maxArea = max(maxArea, (width * minHeight));
-      }
+    while (l < r) {
+      int area = (r - l) * min(heights[l], heights[r]);
+      maxArea = max(area, maxArea);
+      if (heights[l] == heights[r])
+        ++l, --r;
+      else if (heights[l] < heights[r])
+        ++l;
+      else
+        --r;
     }
     return maxArea;
   }
-
-  [[nodiscard]] int twoPointers(const vector<int> &heights) const noexcept {}
 
 public:
   int maxArea(vector<int> &heights) { return twoPointers(heights); }
