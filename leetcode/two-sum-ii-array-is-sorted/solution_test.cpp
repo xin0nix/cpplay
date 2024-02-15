@@ -6,6 +6,7 @@
 #include <deque>
 #include <iterator>
 #include <list>
+#include <type_traits>
 #include <vector>
 
 // Problem link: https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/
@@ -29,7 +30,10 @@ concept SolutionFrendlyContainer = requires(T a) {
   { a.rbegin() } -> std::forward_iterator<>;
 };
 
-template <SolutionFrendlyContainer C> struct SolutionImpl {
+template <typename C>
+requires SolutionFrendlyContainer<C> &&
+    std::is_integral_v<typename C::value_type>
+struct SolutionImpl {
   using R = typename C::value_type;
   C twoSum(const C &numbers, R target) {
     C result;
@@ -57,7 +61,9 @@ public:
   }
 };
 
-template <SolutionFrendlyContainer C>
+template <typename C>
+requires SolutionFrendlyContainer<C> &&
+    std::is_integral_v<typename C::value_type>
 struct SolutionTest : public testing::Test {
   using S = SolutionImpl<C>;
   S solution;
@@ -65,7 +71,7 @@ struct SolutionTest : public testing::Test {
 };
 
 using Implementations =
-    testing::Types<std::vector<int>, std::list<int>, std::deque<int>>;
+    testing::Types<std::vector<long>, std::list<int8_t>, std::deque<int16_t>>;
 
 TYPED_TEST_SUITE(SolutionTest, Implementations);
 
