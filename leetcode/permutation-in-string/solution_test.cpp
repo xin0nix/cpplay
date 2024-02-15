@@ -8,8 +8,12 @@
 
 using namespace std;
 
-class Solution {
-public:
+template <typename T>
+concept PermutationSolution = requires(T a) {
+  { a.checkInclusion(declval<string>(), declval<string>()) } -> same_as<bool>;
+};
+
+struct SolutionN26 {
   bool checkInclusion(string_view target, string_view message) {
     if (target.size() > message.size())
       return false;
@@ -43,14 +47,25 @@ public:
   }
 };
 
-TEST(PermutationInString, LeetCodeExample1) {
-  ASSERT_TRUE(Solution().checkInclusion("ab", "eidbaooo"));
+template <PermutationSolution T>
+struct PermutationInString : public testing::Test {
+  using value_type = T;
+  T value;
+  T &getSolution() { return value; }
+};
+
+using Implementations = testing::Types<SolutionN26>;
+
+TYPED_TEST_SUITE(PermutationInString, Implementations);
+
+TYPED_TEST(PermutationInString, LeetCodeExample1) {
+  ASSERT_TRUE(this->getSolution().checkInclusion("ab", "eidbaooo"));
 }
 
-TEST(PermutationInString, LeetCodeExample2) {
-  ASSERT_FALSE(Solution().checkInclusion("ab", "eidboaoo"));
+TYPED_TEST(PermutationInString, LeetCodeExample2) {
+  ASSERT_FALSE(this->getSolution().checkInclusion("ab", "eidboaoo"));
 }
 
-TEST(PermutationInString, LeetCodeBug1) {
-  ASSERT_TRUE(Solution().checkInclusion("adc", "dcda"));
+TYPED_TEST(PermutationInString, LeetCodeBug1) {
+  ASSERT_TRUE(this->getSolution().checkInclusion("adc", "dcda"));
 }
