@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <concepts>
 #include <deque>
+#include <iterator>
 #include <list>
 #include <vector>
 
@@ -24,11 +25,8 @@ the same element twice.
 
 template <typename T>
 concept SolutionFrendlyContainer = requires(T a) {
-  a.front();
-  a.back();
-  a.begin()++;
-  a.rbegin()++;
-  typename T::value_type;
+  { a.begin() } -> std::forward_iterator<>;
+  { a.rbegin() } -> std::forward_iterator<>;
 };
 
 template <SolutionFrendlyContainer C> struct SolutionImpl {
@@ -66,7 +64,8 @@ struct SolutionTest : public testing::Test {
   S &getSolution() { return solution; }
 };
 
-using Implementations = testing::Types<std::vector<int>, std::list<int>, std::deque<int>>;
+using Implementations =
+    testing::Types<std::vector<int>, std::list<int>, std::deque<int>>;
 
 TYPED_TEST_SUITE(SolutionTest, Implementations);
 
