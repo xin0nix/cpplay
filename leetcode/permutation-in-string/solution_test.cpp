@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fmt/core.h>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -48,36 +49,38 @@ struct SolutionN26 {
 };
 
 struct SolutionN {
+  struct PseudoHashMap {
+    array<int, 26> data = {0};
+    int &get(char c) { return data[(int)c - (int)'a']; }
+  };
+
   bool checkInclusion(string_view target, string_view message) {
     if (target.size() > message.size())
       return false;
-    unordered_map<char, int> tgtFreq;
-    unordered_map<char, int> winFreq;
-    // fmt::println("Target: {}, string: {}", target, message);
+    PseudoHashMap tgtFreq;
+    PseudoHashMap winFreq;
     for (auto c : target)
-      tgtFreq[c]++;
+      tgtFreq.get(c)++;
     for (auto c : message.substr(0, target.size()))
-      winFreq[c]++;
+      winFreq.get(c)++;
     int matches = 0;
     for (char c = 'a'; c <= 'z'; ++c)
-      if (tgtFreq[c] == winFreq[c])
+      if (tgtFreq.get(c) == winFreq.get(c)) [[unlikely]]
         matches++;
     for (int l = 1, r = target.size() + 1; r <= message.size(); ++l, ++r) {
-      if (matches == 26)
+      if (matches == 26) [[unlikely]]
         return true;
-      // fmt::println("Window: {}", message.substr(l, target.size()));
-      // [l, r)
       const char cOut = message[l - 1];
       const char cIn = message[r - 1];
-      winFreq[cIn]++;
-      if (winFreq[cIn] == tgtFreq[cIn])
+      winFreq.get(cIn)++;
+      if (winFreq.get(cIn) == tgtFreq.get(cIn))
         matches++;
-      else if (winFreq[cIn] - 1 == tgtFreq[cIn])
+      else if (winFreq.get(cIn) - 1 == tgtFreq.get(cIn))
         matches--;
-      winFreq[cOut]--;
-      if (winFreq[cOut] == tgtFreq[cOut])
+      winFreq.get(cOut)--;
+      if (winFreq.get(cOut) == tgtFreq.get(cOut))
         matches++;
-      else if (winFreq[cOut] + 1 == tgtFreq[cOut])
+      else if (winFreq.get(cOut) + 1 == tgtFreq.get(cOut))
         matches--;
     }
     return (matches == 26);
