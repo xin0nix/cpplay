@@ -47,6 +47,43 @@ struct SolutionN26 {
   }
 };
 
+struct SolutionN {
+  bool checkInclusion(string_view target, string_view message) {
+    if (target.size() > message.size())
+      return false;
+    unordered_map<char, int> tgtFreq;
+    unordered_map<char, int> winFreq;
+    // fmt::println("Target: {}, string: {}", target, message);
+    for (auto c : target)
+      tgtFreq[c]++;
+    for (auto c : message.substr(0, target.size()))
+      winFreq[c]++;
+    int matches = 0;
+    for (char c = 'a'; c <= 'z'; ++c)
+      if (tgtFreq[c] == winFreq[c])
+        matches++;
+    for (int l = 1, r = target.size() + 1; r <= message.size(); ++l, ++r) {
+      if (matches == 26)
+        return true;
+      // fmt::println("Window: {}", message.substr(l, target.size()));
+      // [l, r)
+      const char cOut = message[l - 1];
+      const char cIn = message[r - 1];
+      winFreq[cIn]++;
+      if (winFreq[cIn] == tgtFreq[cIn])
+        matches++;
+      else if (winFreq[cIn] - 1 == tgtFreq[cIn])
+        matches--;
+      winFreq[cOut]--;
+      if (winFreq[cOut] == tgtFreq[cOut])
+        matches++;
+      else if (winFreq[cOut] + 1 == tgtFreq[cOut])
+        matches--;
+    }
+    return (matches == 26);
+  }
+};
+
 template <PermutationSolution T>
 struct PermutationInString : public testing::Test {
   using value_type = T;
@@ -54,7 +91,7 @@ struct PermutationInString : public testing::Test {
   T &getSolution() { return value; }
 };
 
-using Implementations = testing::Types<SolutionN26>;
+using Implementations = testing::Types<SolutionN, SolutionN26>;
 
 TYPED_TEST_SUITE(PermutationInString, Implementations);
 
@@ -68,4 +105,12 @@ TYPED_TEST(PermutationInString, LeetCodeExample2) {
 
 TYPED_TEST(PermutationInString, LeetCodeBug1) {
   ASSERT_TRUE(this->getSolution().checkInclusion("adc", "dcda"));
+}
+
+TYPED_TEST(PermutationInString, LeetCodeBug2) {
+  ASSERT_TRUE(this->getSolution().checkInclusion("abc", "bbbca"));
+}
+
+TYPED_TEST(PermutationInString, LeetCodeBug3) {
+  ASSERT_TRUE(this->getSolution().checkInclusion("a", "ab"));
 }
