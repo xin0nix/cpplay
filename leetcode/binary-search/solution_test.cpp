@@ -7,6 +7,8 @@
 using namespace std;
 using namespace ::testing;
 
+// FIXME: use concepts
+
 struct NaiveSolution {
   int search(const vector<int> &nums, const int target) {
     const int len = static_cast<int>(nums.size());
@@ -39,6 +41,7 @@ struct LowerBoundSolution {
 
 using SolutionTypes = Types<NaiveSolution, LowerBoundSolution>;
 
+// FIXME: use concepts
 template <typename T> struct BinarySearchTest : Test {
   T solution;
   T &getSolution() { return solution; }
