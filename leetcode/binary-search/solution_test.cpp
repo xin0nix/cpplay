@@ -1,14 +1,15 @@
 
 #include <algorithm>
+#include <concepts>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <type_traits>
 #include <vector>
 
 using namespace std;
 using namespace ::testing;
 
-// FIXME: use concepts
-
+// FIXME: iterator-based implementation
 struct NaiveSolution {
   int search(const vector<int> &nums, const int target) {
     const int len = static_cast<int>(nums.size());
@@ -41,8 +42,15 @@ struct LowerBoundSolution {
 
 using SolutionTypes = Types<NaiveSolution, LowerBoundSolution>;
 
-// FIXME: use concepts
-template <typename T> struct BinarySearchTest : Test {
+// FIXME:
+// - take not only vectors, but anything vector-ish, for example array
+// - allow for any integral type
+template <typename T>
+concept BinarySearchSolution = requires(T a) {
+  { a.search(declval<vector<int>>(), declval<int>()) } -> convertible_to<int>;
+};
+
+template <BinarySearchSolution T> struct BinarySearchTest : Test {
   T solution;
   T &getSolution() { return solution; }
 };
