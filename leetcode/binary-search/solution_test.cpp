@@ -3,29 +3,34 @@
 #include <concepts>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <iterator>
 #include <type_traits>
 #include <vector>
 
 using namespace std;
 using namespace ::testing;
 
+template <typename RandomAccessIter>
+requires random_access_iterator<RandomAccessIter>
+static int binarySearchImpl(RandomAccessIter first, RandomAccessIter last,
+                            typename RandomAccessIter::value_type target) {
+  RandomAccessIter left = first, right = last - 1;
+  while (distance(left, right) >= 0) {
+    RandomAccessIter middle = left + distance(left, right) / 2;
+    if (target == *middle)
+      return distance(first, middle);
+    else if (target < *middle)
+      right = middle - 1;
+    else
+      left = middle + 1;
+  }
+  return -1;
+}
+
 // FIXME: iterator-based implementation
 struct NaiveSolution {
   int search(const vector<int> &nums, const int target) {
-    const int len = static_cast<int>(nums.size());
-    int idx = -1;
-    int l = 0, r = len - 1;
-    while (l <= r) {
-      int m = l + ((r - l) / 2);
-      const int val = nums[m];
-      if (target == val)
-        return m;
-      else if (target < val)
-        r = m - 1; // l .. target? .. m-1
-      else
-        l = m + 1; // m+1 .. target? .. r
-    }
-    return idx;
+    return binarySearchImpl(nums.begin(), nums.end(), target);
   }
 };
 
@@ -80,4 +85,9 @@ TYPED_TEST(BinarySearchTest, MyExample1) {
 TYPED_TEST(BinarySearchTest, MyExample2) {
   vector nums({-1, 0, 3, 5, 9, 12});
   ASSERT_EQ(this->getSolution().search(nums, -100), -1);
+}
+
+TYPED_TEST(BinarySearchTest, LeetCodeBug1) {
+  vector nums({-1});
+  ASSERT_EQ(this->getSolution().search(nums, 2), -1);
 }
