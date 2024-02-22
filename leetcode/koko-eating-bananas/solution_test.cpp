@@ -8,23 +8,28 @@ class Solution {
 public:
   [[nodiscard]] int minEatingSpeed(const vector<int> &piles,
                                    const int maxTime) {
-    if (piles.empty() || maxTime < piles.size())
-      return -1;
-    vector<int> freshCopy;
-    freshCopy.reserve(piles.size());
-    const int maxBiteSize = *max_element(piles.begin(), piles.end());
-    int biteSize;
-    for (biteSize = 1; biteSize <= maxBiteSize; ++biteSize) {
+    const int maxBite = *max_element(piles.begin(), piles.end());
+    int bestBite = maxBite, l = 1, r = maxBite;
+    while (l <= r) {
+      int bite = (l + r) / 2;
       long time = 0; // hours passed since the beginning
       for (int pileSize : piles)
-        time += int(ceil(float(pileSize) / float(biteSize)));
-      if (time <= maxTime)
-        return biteSize;
-      freshCopy = piles;
+        time += int(ceil(double(pileSize) / double(bite)));
+      if (time <= maxTime) {
+        bestBite = min(bite, bestBite);
+        r = bite - 1;
+      } else {
+        l = bite + 1;
+      }
     }
-    return -2; // logical error somewhere
+    return bestBite;
   }
 };
+
+TEST(KokoEatingBananaTest, LeetCodeBug1) {
+  vector piles({1000000000});
+  ASSERT_EQ(Solution().minEatingSpeed(piles, 2), 500000000);
+}
 
 TEST(KokoEatingBananaTest, LeetCode1) {
   vector piles({3, 6, 7, 11});
@@ -39,16 +44,6 @@ TEST(KokoEatingBananaTest, LeetCode2) {
 TEST(KokoEatingBananaTest, LeetCode3) {
   vector piles({30, 11, 23, 4, 20});
   ASSERT_EQ(Solution().minEatingSpeed(piles, 6), 23);
-}
-
-TEST(KokoEatingBananaTest, Empty) {
-  vector<int> piles;
-  ASSERT_EQ(Solution().minEatingSpeed(piles, 6), -1);
-}
-
-TEST(KokoEatingBananaTest, NotEnough) {
-  vector piles({1, 2, 3});
-  ASSERT_EQ(Solution().minEatingSpeed(piles, 1), -1);
 }
 
 TEST(KokoEatingBananaTest, TrivialOnes) {
