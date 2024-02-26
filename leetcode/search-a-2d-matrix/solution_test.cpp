@@ -5,9 +5,42 @@
 
 using namespace std;
 
-struct Solution {
-  bool searchMatrix(const vector<vector<int>> &matrix, int target) {
-    throw exception();
+class Solution {
+  bool search1D(const vector<int> &row, const int target) {
+    int l = 0, r = row.size() - 1;
+    while (l <= r) {
+      // l .. tl .. m .. tr .. r
+      const int m = (l + r) / 2;
+      const int val = row[m];
+      if (target < val) // tl
+        r = m - 1;
+      else if (val < target) // tr
+        l = m + 1;
+      else
+        return true;
+    }
+    return false;
+  }
+
+  bool search2D(const vector<vector<int>> &matrix, const int target) {
+    int t = 0, b = matrix.size() - 1;
+    while (t <= b) {
+      // t .. tt .. front..back .. tb .. b
+      const int m = (t + b) / 2;
+      const vector<int> &row = matrix[m];
+      if (target < row.front()) // tt
+        b = m - 1;
+      else if (row.back() < target) // tb
+        t = m + 1;
+      else
+        return search1D(row, target);
+    }
+    return false;
+  }
+
+public:
+  bool searchMatrix(const vector<vector<int>> &matrix, const int target) {
+    return search2D(matrix, target);
   }
 };
 
