@@ -1,7 +1,6 @@
 common -c dbg
 common --cxxopt=-std=c++20
 common --cxxopt=-Wall
-common --repo_env="CXX=clang++"
 common --repo_env="LD=lld"
-bazel build --linkopt="-fuse-ld=lld" 
+build --linkopt="-fuse-ld=lld" 
 test --test_output=all --test_timeout=5
