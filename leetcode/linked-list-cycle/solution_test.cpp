@@ -34,15 +34,12 @@ struct ListWrapper final {
 class Solution {
 public:
   bool hasCycle(ListNode *head) {
-    if (!head)
-      return false;
-    ListNode *slow = head, *fast = head->next;
-    while (fast) {
-      for (int i = 0; fast && i < 2; fast = fast->next, ++i)
-        if (fast == slow)
-          return true;
-      if (slow)
-        slow = slow->next;
+    ListNode *slow = head, *fast = head;
+    while (fast && fast->next) {
+      fast = fast->next->next; // double stride
+      slow = slow->next;
+      if (fast == slow)
+        return true;
     }
     return false;
   }
