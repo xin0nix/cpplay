@@ -1,0 +1,11 @@
+// :LspSettings clangd
+lspconf.clangd.setup {
+  on_attach = lsphandler.on_attach,
+  capabilities = lsphandler.capabilities,
+  cmd = {
+    "clangd",
+    '--query-driver=**',
+    '--header-insertion=never'
+  },
+  filetypes = { "c", "cpp" },
+}
