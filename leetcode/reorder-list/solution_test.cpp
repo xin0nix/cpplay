@@ -75,7 +75,7 @@ struct CustomSolutionN2 {
 struct LinearSolution {
   ListNode *findMiddle(ListNode *head) {
     ListNode *slow = head, *fast = head->next;
-    while (fast && fast->next) {
+    while (fast && fast->next) [[likely]] {
       slow = slow->next;
       fast = fast->next->next;
     }
@@ -85,7 +85,7 @@ struct LinearSolution {
   ListNode *reverse(ListNode *middle) {
     ListNode *prev = middle, *cur = middle->next;
     prev->next = nullptr;
-    while (cur) {
+    while (cur) [[likely]] {
       ListNode *next = cur->next;
       cur->next = prev;
       prev = cur;
@@ -97,15 +97,20 @@ struct LinearSolution {
   void merge(ListNode *head, ListNode *tail) {
     // Both lists share pointer to the last element, but it should only be
     // included once
-    //
+    while (head) [[likely]] {
+      ListNode *headNext = head->next;
+      ListNode *tailNext = tail->next;
+      head->next = tail;
+      tail->next = headNext;
+      head = headNext;
+      tail = tailNext;
+    }
   }
 
   void reorderList(ListNode *head) {
     if (!head)
       return;
-    ListNode *middle = findMiddle(head);
-    ListNode *tail = reverse(middle);
-    merge(head, tail);
+    merge(head, reverse(findMiddle(head)));
   }
 };
 
