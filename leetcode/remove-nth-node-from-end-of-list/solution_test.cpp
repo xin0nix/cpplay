@@ -45,7 +45,21 @@ vector<int> buildVec(ListNode *head) {
 // and return its head.
 class Solution {
 public:
-  ListNode *removeNthFromEnd(ListNode *head, const int n) {}
+  ListNode *removeNthFromEnd(ListNode *head, const int n) {
+    ListNode *fast = head;
+    for (int i = 0; i < n; ++i, fast = fast->next)
+      ;
+    ListNode base;
+    base.next = head;
+    ListNode *slow = &base;
+    while (fast) {
+      fast = fast->next;
+      slow = slow->next;
+    }
+    // slow point to the element "before" the target
+    slow->next = slow->next->next;
+    return base.next;
+  }
 };
 
 TEST(RemoveNthTest, LeetCode1) {
@@ -67,4 +81,18 @@ TEST(RemoveNthTest, LeetCode3) {
   ListNode *h = Solution().removeNthFromEnd(lw.getHead(), 1);
   auto res = buildVec(h);
   ASSERT_THAT(res, ::testing::ElementsAre(1));
+}
+
+TEST(RemoveNthTest, RemoveHead) {
+  ListWrapper lw({1, 2, 3});
+  ListNode *h = Solution().removeNthFromEnd(lw.getHead(), 3);
+  auto res = buildVec(h);
+  ASSERT_THAT(res, ::testing::ElementsAre(2, 3));
+}
+
+TEST(RemoveNthTest, RemoveTail) {
+  ListWrapper lw({1, 2, 3, 4, 5});
+  ListNode *h = Solution().removeNthFromEnd(lw.getHead(), 1);
+  auto res = buildVec(h);
+  ASSERT_THAT(res, ::testing::ElementsAre(1, 2, 3, 4));
 }
