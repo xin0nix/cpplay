@@ -53,9 +53,35 @@ vector<int> buildVec(ListNode *head) {
 class Solution {
 public:
   ListNode *addTwoNumbers(ListNode *l1, ListNode *l2) {
-    return nullptr; // TODO:
+    int carry = 0;
+    ListNode base;
+    ListNode *tail = &base;
+    while (l1 || l2) {
+      int lhs = l1 ? l1->val : 0;
+      int rhs = l2 ? l2->val : 0;
+      int sum = carry + lhs + rhs;
+      carry = sum / 10;
+      tail->next = new ListNode(sum % 10);
+      tail = tail->next;
+      if (l1)
+        l1 = l1->next;
+      if (l2)
+        l2 = l2->next;
+    }
+    if (carry)
+      tail->next = new ListNode(carry);
+    return base.next;
   }
 };
+
+TEST(AddTwoNumsTest, LeetCode1) {
+  ListWrapper lhs({9, 9, 9, 9, 9, 9, 9});
+  ListWrapper rhs({9, 9, 9, 9});
+  ListNode *resHead = Solution().addTwoNumbers(lhs.getHead(), rhs.getHead());
+  auto res = buildVec(resHead);
+  EXPECT_THAT(res, ElementsAre(8, 9, 9, 9, 0, 0, 0, 1));
+  ListNode::deallocate(resHead);
+}
 
 TEST(AddTwoNumsTest, NeetCode1) {
   ListWrapper lhs({2, 4, 3, 3});
