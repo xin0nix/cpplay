@@ -1,14 +1,21 @@
-#include "gmock/gmock.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
 using testing::ElementsAre;
 
 // Definition for a Node.
-class Node {
-public:
+struct Node {
+  static void deallocate(Node *head) {
+    while (head) {
+      Node *next = head->next;
+      delete head;
+      head = next;
+    }
+  }
+
   int val;
   Node *next;
   Node *random;
@@ -54,7 +61,7 @@ struct VectorWrapper {
       result.push_back(cur->val);
       int idx = [&] {
         if (cur->random)
-          return static_cast<int>(std::distance(head, cur->random));
+          return cur->random->val;
         return -1;
       }();
       randomShuffle.push_back(idx);
@@ -67,12 +74,38 @@ TEST(WrapperTest, Basic) {
   ListWrapper lw({7, 13, 11, 10, 1}, {-1, 0, 4, 2, 0});
   VectorWrapper vw(lw.getHead());
   EXPECT_THAT(vw.result, testing::ElementsAre(7, 13, 11, 10, 1));
-  EXPECT_THAT(vw.randomShuffle, testing::ElementsAre(-1, 0, 4, 2, 0));
+  EXPECT_THAT(vw.randomShuffle, testing::ElementsAre(-1, 7, 1, 11, 7));
 }
 
 class Solution {
 public:
   Node *copyRandomList(Node *head) {
-    // TODO:
+    unordered_map<Node *, Node *> nodeMap;
+    Node base(0);
+    // 1st iteration: clone the list itself
+    Node *clone = &base;
+    for (Node *cur = head; cur; cur = cur->next) {
+      Node *newNode = new Node(cur->val);
+      nodeMap[cur] = newNode;
+      clone->next = newNode;
+      newNode->random = cur->random;
+      clone = newNode;
+    }
+    // 2nd iteration: remap the random pointers
+    for (Node *cur = base.next; cur; cur = cur->next) {
+      if (!cur->random)
+        continue;
+      cur->random = nodeMap[cur->random];
+    }
+    return base.next;
   }
 };
+
+TEST(CopyListSolution, LeetCode1) {
+  ListWrapper lw({7, 13, 11, 10, 1}, {-1, 0, 4, 2, 0});
+  Node *head = Solution().copyRandomList(lw.getHead());
+  VectorWrapper vw(head);
+  EXPECT_THAT(vw.result, testing::ElementsAre(7, 13, 11, 10, 1));
+  EXPECT_THAT(vw.randomShuffle, testing::ElementsAre(-1, 7, 1, 11, 7));
+  Node::deallocate(head);
+}
