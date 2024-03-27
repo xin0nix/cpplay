@@ -1,4 +1,6 @@
 #include <functional>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <memory>
 #include <optional>
 #include <string>
@@ -6,13 +8,37 @@
 #include <vector>
 
 using namespace std;
+using ::testing::ElementsAre;
 
-struct LRUCache {
-  LRUCache(int capacity) {}
+struct LRUCache final {
+  struct Node {
+    Node *prev{nullptr};
+    Node *next{nullptr};
+    int val{0};
+  };
 
-  int get(int key) {}
+  int mCapacity;
+  // L <--------------------> R
+  // leastUsed ... ... mostUsed
+  Node *leastUsed{nullptr};
+  Node *mostUsed{nullptr};
+  unordered_map<int, Node *> kvMap;
 
-  void put(int key, int value) {}
+  LRUCache(int capacity) : mCapacity(capacity) {}
+
+  int get(int key) {
+    auto it = kvMap.find(key);
+    if (it == kvMap.end())
+      return -1;
+    Node *n = it->second;
+    // TODO: move to the right-most position
+    return n->val;
+  }
+
+  void put(int key, int value) {
+    // TODO: evict the least recently used item if necessary
+    // TODO: put the new node to the right-most position
+  }
 };
 
 struct LRUCacheHandle {
@@ -43,3 +69,10 @@ struct LRUCacheHandle {
     }
   }
 };
+
+TEST(LRUCacheTest, LeetCodeExample1) {
+  LRUCacheHandle lch;
+  lch.check({"LRUCache", "put", "put", "get", "put", "get", "put", "get", "get",
+             "get"},
+            {{2}, {1, 1}, {2, 2}, {1}, {3, 3}, {2}, {4, 4}, {1}, {3}, {4}});
+}
