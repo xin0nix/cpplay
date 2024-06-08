@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <fmt/core.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <vector>
@@ -46,7 +45,8 @@ TEST(ThreeSumTest, LeetCodeExample1) {
   vector<string> converted;
   ranges::transform(res.begin(), res.end(), back_inserter(converted),
                     [](auto abc) {
-                      return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
+                      return "FIXME";
+                      // return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
                     });
   EXPECT_THAT(converted, UnorderedElementsAre("[-1,-1,2]", "[-1,0,1]"));
 }
@@ -57,7 +57,8 @@ TEST(ThreeSumTest, LeetCodeExample2) {
   vector<string> converted;
   ranges::transform(res.begin(), res.end(), back_inserter(converted),
                     [](auto abc) {
-                      return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
+                      return "FIXME";
+                      // return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
                     });
   EXPECT_THAT(converted, UnorderedElementsAre());
 }
@@ -68,7 +69,8 @@ TEST(ThreeSumTest, LeetCodeExample3) {
   vector<string> converted;
   ranges::transform(res.begin(), res.end(), back_inserter(converted),
                     [](auto abc) {
-                      return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
+                      return "FIXME";
+                      // return fmt::format("[{},{},{}]", abc[0], abc[1], abc[2]);
                     });
   EXPECT_THAT(converted, UnorderedElementsAre("[0,0,0]"));
 }
