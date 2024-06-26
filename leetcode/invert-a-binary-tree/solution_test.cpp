@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <deque>
 #include <iostream>
 
 #include <gtest/gtest.h>
@@ -29,42 +30,72 @@ constexpr bool isValidTreeSize(size_t s) {
 
 template <size_t N>
   requires(isValidTreeSize(N)) // that's not enough actually
-struct Tree {
-  explicit Tree(const std::array<int, N> &vals) {
+class Tree {
+  std::array<TreeNode, N> data;
+
+public:
+  explicit Tree(const std::array<std::optional<int>, N> &vals) {
     std::transform(vals.cbegin(), vals.cend(), data.begin(), data.begin(),
-                   [](int x, TreeNode &node) -> TreeNode {
-                     node.val = x;
+                   [](std::optional<int> x, TreeNode &node) -> TreeNode {
+                     node.val = x.value_or(0);
                      return node;
                    });
     // parent:     (i - 1) / 2
     // left child:  p * 2 + 1
     // right child: p * 2 + 2
-    for (int p = 0; p <= N / 2; ++p) {
+    for (int p = 0; p < N / 2; ++p) {
       const int l = p * 2 + 1;
       const int r = p * 2 + 2;
-      data[p].left = &data[l];
-      data[p].right = &data[r];
+      if (vals[l].has_value())
+        data[p].left = &data[l];
+      if (vals[r].has_value())
+        data[p].right = &data[r];
     }
   }
 
-  std::array<TreeNode, N> data;
+  TreeNode *head() {
+    static_assert(N > 0);
+    return &data.front();
+  }
 
-  friend std::ostream &operator<<(std::ostream &s, Tree &tree) {
+  friend std::ostream &operator<<(std::ostream &os, Tree &tree) {
     auto &data = tree.data;
-    s << "(";
-    for (auto it = data.begin(), e = data.end(); it != e; ++it) {
-      s << it->val;
-      if (it + 1 != data.end())
-        s << ", ";
+    // parent:     (i - 1) / 2
+    // left child:  p * 2 + 1
+    // right child: p * 2 + 2
+    std::deque<std::pair<TreeNode *, int>> queue{{&data.front(), 0}};
+    os << "\n";
+    while (!queue.empty()) {
+      auto [node, indent] = queue.back();
+      queue.pop_back();
+      os << "|_" << std::string(indent, '_');
+      if (!node) {
+        os << "#\n";
+        continue;
+      }
+      os << node->val;
+      if (node->left || node->right) {
+        queue.emplace_back(node->left, indent + 1);
+        queue.emplace_back(node->right, indent + 1);
+      }
+      os << "\n";
     }
-    s << ")";
-    return s;
+    return os;
   }
 };
 
 class Solution {
 public:
-  TreeNode *invertTree(TreeNode *root) {}
+  TreeNode *invertTree(TreeNode *root) {
+    if (!root)
+      return nullptr;
+    std::swap(root->left, root->right);
+    if (TreeNode **l = &root->left; *l)
+      *l = invertTree(*l);
+    if (TreeNode **r = &root->right; *r)
+      *r = invertTree(*r);
+    return root;
+  }
 };
 
 TEST(TreeHelperTest, TreeValidation) {
@@ -78,18 +109,50 @@ TEST(TreeHelperTest, TreeValidation) {
 }
 
 TEST(TreeHelperTest, SingleItem) {
-  std::array<int, 1> data{-1};
+  std::array<std::optional<int>, 1> data{-1};
   Tree<1> tree(data);
   std::stringstream ss;
   ss << tree;
-  ASSERT_EQ(ss.str(), "(-1)");
+  ASSERT_EQ(ss.str(), R"(
+|_-1
+)");
 }
 
 TEST(TreeHelperTest, Values0throuth2) {
-  std::array<int, 3> data{0, 1, 2};
-  Tree<3> tree(data);
+  std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
+  Tree<7> tree(data);
   std::stringstream ss;
   ss << tree;
-  ASSERT_EQ(ss.str(), "(0, 1, 2)");
+  std::string_view expected = R"(
+|_0
+|__2
+|___#
+|___5
+|__1
+|___4
+|___#
+)";
+  ASSERT_EQ(ss.str(), expected);
 }
 
+TEST(InvertTreeTest, Basic1) {
+  std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
+  Tree<7> tree(data);
+  std::cout << "Before\n";
+  std::cout << tree;
+  Solution().invertTree(tree.head());
+  std::stringstream ss;
+  ss << tree;
+  std::cout << "After\n";
+  std::cout << tree;
+  std::string_view expected = R"(
+|_0
+|__1
+|___#
+|___4
+|__2
+|___5
+|___#
+)";
+  ASSERT_EQ(ss.str(), expected);
+}
