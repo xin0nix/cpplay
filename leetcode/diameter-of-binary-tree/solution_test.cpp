@@ -2,8 +2,7 @@
 #include <array>
 #include <deque>
 #include <iostream>
-#include <ranges>
-#include <stack>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
@@ -29,8 +28,12 @@ constexpr bool isValidTreeSize(size_t s) {
   return (s & lowerMask) == lowerMask and (s & upperMask) == 0;
 }
 
+#if __has_include(<concepts>) && __cpp_concepts >= 201907L
 template <size_t N>
   requires(isValidTreeSize(N)) // that's not enough actually
+#else
+template <size_t N, typename = std::enable_if_t<isValidTreeSize(N)>>
+#endif
 class Tree {
   std::array<TreeNode, N> data;
 
@@ -84,8 +87,7 @@ std::ostream &operator<<(std::ostream &os, const TreeNode &root) {
   return os;
 }
 
-class Solution {
-public:
+struct Solution {
   int diameterOfBinaryTree(TreeNode *root) {
     if (not root)
       return 0;
@@ -115,8 +117,56 @@ public:
   }
 };
 
-TEST(DiameterOfBinTreeTest, Basic1) {
+struct SolutionWithStack {
+  int diameterOfBinaryTree(TreeNode *root) {
+    // TODO:
+    return -1;
+  }
+};
+
+#if __has_include(<concepts>) && __cpp_concepts >= 201907L
+
+template <typename T>
+concept IsSolutionType = requires(T t, TreeNode *root) {
+  { t.diameterOfBinaryTree(root) } -> std::same_as<int>;
+};
+
+template <IsSolutionType T> struct DiameterOfBinTreeTestImpl {
+  T solution;
+};
+
+#else
+
+template <typename T, typename = void>
+struct IsSolutionType : std::false_type {};
+
+template <typename T>
+struct IsSolutionType<
+    T,
+    std::void_t<std::is_same<decltype(std::declval<T &>().diameterOfBinaryTree(
+                                 std::declval<TreeNode *>())),
+                             int>>> : std::true_type {};
+
+template <typename T, typename Enable = void> struct DiameterOfBinTreeTestImpl;
+
+template <typename T>
+struct DiameterOfBinTreeTestImpl<T,
+                                 std::enable_if_t<IsSolutionType<T>::value>> {
+  T solution;
+};
+
+#endif
+
+template <typename T> struct DiameterOfBinTreeTest : public ::testing::Test {
+  DiameterOfBinTreeTestImpl<T> impl;
+  T &get() { return impl.solution; }
+};
+
+using TestTypes = ::testing::Types<Solution, SolutionWithStack>;
+TYPED_TEST_SUITE(DiameterOfBinTreeTest, TestTypes);
+
+TYPED_TEST(DiameterOfBinTreeTest, Basic1) {
   std::array<std::optional<int>, 15> data{1, 2, {}, 3, 4, {}, {}, 5, {}, {}, 6};
   Tree<15> tree(data);
-  ASSERT_EQ(Solution().diameterOfBinaryTree(tree.head()), 4);
+  ASSERT_EQ(this->get().diameterOfBinaryTree(tree.head()), 4);
 }
