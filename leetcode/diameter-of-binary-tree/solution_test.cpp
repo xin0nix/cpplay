@@ -120,6 +120,8 @@ struct Solution {
 struct SolutionWithStack {
   int diameterOfBinaryTree(TreeNode *root) {
     // TODO:
+    // - Basic stack solution
+    // - Advanced Morris Traversal
     return -1;
   }
 };
