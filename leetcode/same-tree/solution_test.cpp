@@ -103,7 +103,7 @@ struct Solution {
   }
 };
 
-TEST(TreeHelperTest, TreeValidation) {
+TEST(SameTreeTest, TreeValidation) {
   for (size_t n = 2; n <= 4096; ++n) {
     if (std::ceil(std::log2(n)) == std::floor(std::log2(n))) {
       ASSERT_TRUE(isValidTreeSize(n - 1));
@@ -113,7 +113,7 @@ TEST(TreeHelperTest, TreeValidation) {
   }
 }
 
-TEST(TreeHelperTest, SingleItem) {
+TEST(SameTreeTest, SingleItem) {
   std::array<std::optional<int>, 1> data{-1};
   Tree<1> tree(data);
   std::stringstream ss;
@@ -123,7 +123,7 @@ TEST(TreeHelperTest, SingleItem) {
 )");
 }
 
-TEST(TreeHelperTest, Values0throuth2) {
+TEST(SameTreeTest, Values0throuth2) {
   std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
   Tree<7> tree(data);
   std::stringstream ss;
