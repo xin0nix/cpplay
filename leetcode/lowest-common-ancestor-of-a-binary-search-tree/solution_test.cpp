@@ -5,6 +5,7 @@
 #include <iostream>
 #include <queue>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 // Definition for a binary tree node.
@@ -100,7 +101,7 @@ public:
 };
 } // namespace
 
-struct Solution {
+struct BruteForceSolution {
   TreeNode *lowestCommonAncestor(TreeNode *root, TreeNode *p, TreeNode *q) {
     struct Impl {
       struct SG {
@@ -149,7 +150,57 @@ struct Solution {
   }
 };
 
-TEST(LCATreeTest, TreeValidation) {
+struct LinearPostOrderSolution {
+  using BitField = uint8_t;
+  static constexpr BitField maskP = 0b01;
+  static constexpr BitField maskQ = 0b10;
+  TreeNode *lowestCommonAncestor(TreeNode *root, TreeNode *p, TreeNode *q) {
+    struct {
+      int pVal;
+      int qVal;
+      TreeNode *lcaNode = nullptr;
+      BitField visit(TreeNode *node) {
+        if (not node)
+          return 0;
+        BitField seen = [&]() -> BitField {
+          if (node->val == pVal)
+            return maskP;
+          if (node->val == qVal)
+            return maskQ;
+          return 0;
+        }();
+        if (auto *l = node->left; l)
+          seen |= visit(l);
+        if (auto *r = node->right; r)
+          seen |= visit(r);
+        if (not lcaNode and seen == 0b11) {
+          lcaNode = node;
+        }
+        return seen;
+      }
+    } impl{p->val, q->val};
+    impl.visit(root);
+    return impl.lcaNode;
+  }
+};
+
+template <typename T>
+concept IsValidSolution = requires(T t, TreeNode *dummy) {
+  { t.lowestCommonAncestor(dummy, dummy, dummy) } -> std::same_as<TreeNode *>;
+};
+
+template <typename T>
+  requires IsValidSolution<T>
+struct LCATreeTest : ::testing::Test {
+  T solution;
+  T &get() { return solution; }
+};
+
+using LCASolutionTypes = ::testing::Types<BruteForceSolution, LinearPostOrderSolution>;
+
+TYPED_TEST_SUITE(LCATreeTest, LCASolutionTypes);
+
+TYPED_TEST(LCATreeTest, TreeValidation) {
   for (size_t n = 2; n <= 4096; ++n) {
     if (std::ceil(std::log2(n)) == std::floor(std::log2(n))) {
       ASSERT_TRUE(isValidTreeSize(n - 1));
@@ -159,7 +210,7 @@ TEST(LCATreeTest, TreeValidation) {
   }
 }
 
-TEST(LCATreeTest, SingleItem) {
+TYPED_TEST(LCATreeTest, SingleItem) {
   std::array<std::optional<int>, 1> data{-1};
   Tree<1> tree(data);
   std::stringstream ss;
@@ -169,7 +220,7 @@ TEST(LCATreeTest, SingleItem) {
 )");
 }
 
-TEST(LCATreeTest, Values0throuth2) {
+TYPED_TEST(LCATreeTest, Values0throuth2) {
   std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
   Tree<7> tree(data);
   std::stringstream ss;
@@ -186,7 +237,7 @@ TEST(LCATreeTest, Values0throuth2) {
   ASSERT_EQ(ss.str(), expected);
 }
 
-TEST(LCATreeTest, Leet1) {
+TYPED_TEST(LCATreeTest, Leet1) {
   std::array<std::optional<int>, 15> data{6, 2, 8, 0, 4, 7, 9, {}, {}, 3, 5};
   Tree<data.size()> tree(data);
   int pVal = 2;
@@ -198,11 +249,11 @@ TEST(LCATreeTest, Leet1) {
   ASSERT_EQ(q->val, qVal);
   auto *lca = tree.get(lcaVal);
   ASSERT_EQ(lca->val, lcaVal);
-  auto *res = Solution().lowestCommonAncestor(tree.head(), p, q);
+  auto *res = this->get().lowestCommonAncestor(tree.head(), p, q);
   ASSERT_EQ(res->val, lca->val);
 }
 
-TEST(LCATreeTest, Leet2) {
+TYPED_TEST(LCATreeTest, Leet2) {
   std::array<std::optional<int>, 15> data{6, 2, 8, 0, 4, 7, 9, {}, {}, 3, 5};
   Tree<data.size()> tree(data);
   int pVal = 2;
@@ -214,11 +265,11 @@ TEST(LCATreeTest, Leet2) {
   ASSERT_EQ(q->val, qVal);
   auto *lca = tree.get(lcaVal);
   ASSERT_EQ(lca->val, lcaVal);
-  auto *res = Solution().lowestCommonAncestor(tree.head(), p, q);
+  auto *res = this->get().lowestCommonAncestor(tree.head(), p, q);
   ASSERT_EQ(res->val, lca->val);
 }
 
-TEST(LCATreeTest, Leet3) {
+TYPED_TEST(LCATreeTest, Leet3) {
   std::array<std::optional<int>, 3> data{2, 1};
   Tree<data.size()> tree(data);
   int pVal = 2;
@@ -230,11 +281,11 @@ TEST(LCATreeTest, Leet3) {
   ASSERT_EQ(q->val, qVal);
   auto *lca = tree.get(lcaVal);
   ASSERT_EQ(lca->val, lcaVal);
-  auto *res = Solution().lowestCommonAncestor(tree.head(), p, q);
+  auto *res = this->get().lowestCommonAncestor(tree.head(), p, q);
   ASSERT_EQ(res->val, lca->val);
 }
 
-TEST(LCATreeTest, Custom1) {
+TYPED_TEST(LCATreeTest, Custom1) {
   std::array<std::optional<int>, 15> data{6, 2, 8, 0, 4, 7, 9, {}, {}, 3, 5};
   Tree<data.size()> tree(data);
   int pVal = 0;
@@ -246,11 +297,11 @@ TEST(LCATreeTest, Custom1) {
   ASSERT_EQ(q->val, qVal);
   auto *lca = tree.get(lcaVal);
   ASSERT_EQ(lca->val, lcaVal);
-  auto *res = Solution().lowestCommonAncestor(tree.head(), p, q);
+  auto *res = this->get().lowestCommonAncestor(tree.head(), p, q);
   ASSERT_EQ(res->val, lca->val);
 }
 
-TEST(LCATreeTest, Custom2) {
+TYPED_TEST(LCATreeTest, Custom2) {
   std::array<std::optional<int>, 15> data{6, 2, 8, 0, 4, 7, 9, {}, {}, 3, 5};
   Tree<data.size()> tree(data);
   int pVal = 7;
@@ -262,6 +313,6 @@ TEST(LCATreeTest, Custom2) {
   ASSERT_EQ(q->val, qVal);
   auto *lca = tree.get(lcaVal);
   ASSERT_EQ(lca->val, lcaVal);
-  auto *res = Solution().lowestCommonAncestor(tree.head(), p, q);
+  auto *res = this->get().lowestCommonAncestor(tree.head(), p, q);
   ASSERT_EQ(res->val, lca->val);
 }
