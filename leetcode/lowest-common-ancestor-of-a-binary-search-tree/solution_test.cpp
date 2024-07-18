@@ -184,6 +184,27 @@ struct LinearPostOrderSolution {
   }
 };
 
+struct LogarithmicSolution {
+  TreeNode *lowestCommonAncestor(TreeNode *root, TreeNode *p, TreeNode *q) {
+    if (p->val > q->val)
+      std::swap(q, p);
+    // p < q at this point
+    struct {
+      int pVal;
+      int qVal;
+      TreeNode *visit(TreeNode *node) {
+        const int nodeVal = node->val;
+        if (nodeVal < pVal)
+          return visit(node->right);
+        if (nodeVal > qVal)
+          return visit(node->left);
+        return node;
+      }
+    } impl{p->val, q->val};
+    return impl.visit(root);
+  }
+};
+
 template <typename T>
 concept IsValidSolution = requires(T t, TreeNode *dummy) {
   { t.lowestCommonAncestor(dummy, dummy, dummy) } -> std::same_as<TreeNode *>;
@@ -196,7 +217,9 @@ struct LCATreeTest : ::testing::Test {
   T &get() { return solution; }
 };
 
-using LCASolutionTypes = ::testing::Types<BruteForceSolution, LinearPostOrderSolution>;
+using LCASolutionTypes =
+    ::testing::Types<BruteForceSolution, LinearPostOrderSolution,
+                     LogarithmicSolution>;
 
 TYPED_TEST_SUITE(LCATreeTest, LCASolutionTypes);
 
