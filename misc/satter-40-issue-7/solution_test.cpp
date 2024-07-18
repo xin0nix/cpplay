@@ -79,3 +79,67 @@ TEST(FuncTemplateSpecialization, OddCaseB) {
   odd_case_b::A<int, float *, 101> c;
   ASSERT_EQ(odd_case_b::picked, "A<T, P *, I>");
 }
+
+namespace dimov_abrahams_case_a {
+std::string called = "";
+// (a) primary template
+template <typename T> void f(T) { called = "a"; }
+// (b) primary template, overloading (a)
+template <typename T> void f(T *) { called = "b"; }
+// (c) explicit specialization of (b)
+template <> void f<int>(int *) { called = "c"; }
+} // namespace dimov_abrahams_case_a
+
+TEST(FuncTemplateSpecialization, DimovAbrahamsCaseA) {
+  int *p;
+  dimov_abrahams_case_a::f(p);
+  ASSERT_EQ(dimov_abrahams_case_a::called, "c");
+}
+
+namespace dimov_abrahams_case_b {
+std::string called = "";
+// (a) primary template
+template <typename T> void f(T) { called = "a"; }
+// (c) explicit specialization of (a), not (b)!
+template <> void f<int *>(int *) { called = "c"; }
+// (b) primary template, overloading (a)
+template <typename T> void f(T *) { called = "b"; }
+} // namespace dimov_abrahams_case_b
+
+TEST(FuncTemplateSpecialization, DimovAbrahamsCaseB) {
+  int *p;
+  dimov_abrahams_case_b::f(p);
+  ASSERT_EQ(dimov_abrahams_case_b::called, "b");
+}
+
+namespace morale_2 {
+std::string called = "";
+template <class T> struct FImpl;
+template <class T> void f(T t) { FImpl<T>::f(t); } // Do not touch
+template <class T> struct FImpl {
+  static void f(T t) { called = "generic"; }
+};
+template <> struct FImpl<int> {
+  static void f(int) { called = "int"; }
+};
+template <> struct FImpl<double> {
+  static void f(double) { called = "double"; }
+};
+} // namespace morale_2
+
+TEST(FuncTemplateSpecialization, Morale2) {
+  using namespace morale_2;
+  int p;
+  f(p);
+  ASSERT_EQ(called, "int");
+  double q;
+  f(q);
+  ASSERT_EQ(called, "double");
+  float y;
+  f(y);
+  ASSERT_EQ(called, "generic");
+  struct {
+  } x;
+  f(x);
+  ASSERT_EQ(called, "generic");
+}
