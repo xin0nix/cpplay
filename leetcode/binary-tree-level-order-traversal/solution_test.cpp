@@ -93,7 +93,38 @@ public:
 };
 } // namespace
 
+template <typename T>
+concept SolutionInterface = requires(T a, TreeNode *node) {
+  { a.levelOrder(node) } -> std::convertible_to<std::vector<std::vector<int>>>;
+};
+
 struct Solution {
+  std::vector<std::vector<int>> levelOrder(TreeNode *root) {
+    if (!root)
+      return {};
+    std::queue<TreeNode *> nodeQueue;
+    nodeQueue.push(root);
+    std::vector<std::vector<int>> res;
+    while (!nodeQueue.empty()) {
+      std::vector<int> level;
+      const size_t levelSize = nodeQueue.size();
+      level.reserve(levelSize);
+      for (size_t i = 0; i < levelSize; ++i) {
+        TreeNode *node = nodeQueue.front();
+        nodeQueue.pop();
+        level.push_back(node->val);
+        if (TreeNode *l = node->left; l)
+          nodeQueue.push(l);
+        if (TreeNode *r = node->right; r)
+          nodeQueue.push(r);
+      }
+      res.push_back(std::move(level));
+    }
+    return res;
+  }
+};
+
+struct MapBasedSolution {
   std::vector<std::vector<int>> levelOrder(TreeNode *root) {
     if (!root)
       return {};
@@ -123,7 +154,26 @@ struct Solution {
   }
 };
 
-TEST(BinTreeLevelTraversalTest, TreeValidation) {
+template <SolutionInterface S>
+struct BinTreeLevelTraversalTest : ::testing::Test {
+  S solution;
+  S &get() { return solution; }
+};
+
+struct NameGanerator {
+  template <SolutionInterface S> static std::string GetName(int) {
+    if constexpr (std::is_same_v<S, MapBasedSolution>)
+      return "map-based-solution";
+    if constexpr (std::is_same_v<S, Solution>)
+      return "solution";
+  }
+};
+
+using SolutionTypes = ::testing::Types<MapBasedSolution, Solution>;
+
+TYPED_TEST_SUITE(BinTreeLevelTraversalTest, SolutionTypes, NameGanerator);
+
+TYPED_TEST(BinTreeLevelTraversalTest, TreeValidation) {
   for (size_t n = 2; n <= 4096; ++n) {
     if (std::ceil(std::log2(n)) == std::floor(std::log2(n))) {
       ASSERT_TRUE(isValidTreeSize(n - 1));
@@ -133,7 +183,7 @@ TEST(BinTreeLevelTraversalTest, TreeValidation) {
   }
 }
 
-TEST(BinTreeLevelTraversalTest, SingleItem) {
+TYPED_TEST(BinTreeLevelTraversalTest, SingleItem) {
   std::array<std::optional<int>, 1> data{-1};
   Tree<1> tree(data);
   std::stringstream ss;
@@ -143,7 +193,7 @@ TEST(BinTreeLevelTraversalTest, SingleItem) {
 )");
 }
 
-TEST(BinTreeLevelTraversalTest, Values0throuth2) {
+TYPED_TEST(BinTreeLevelTraversalTest, Values0throuth2) {
   std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
   Tree<7> tree(data);
   std::stringstream ss;
@@ -160,10 +210,10 @@ TEST(BinTreeLevelTraversalTest, Values0throuth2) {
   ASSERT_EQ(ss.str(), expected);
 }
 
-TEST(BinTreeLevelTraversalTest, CaseA) {
+TYPED_TEST(BinTreeLevelTraversalTest, CaseA) {
   std::array<std::optional<int>, 7> data{0, 1, 2, {}, 4, 5, {}};
   Tree<7> tree(data);
   std::vector<std::vector<int>> expected{{0}, {1, 2}, {4, 5}};
-  auto res = Solution().levelOrder(tree.head());
+  auto res = this->get().levelOrder(tree.head());
   ASSERT_THAT(res, ::testing::ElementsAreArray(expected));
 }
