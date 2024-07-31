@@ -10,7 +10,7 @@
 
 namespace tcp_socket {
 
-TcpSocket::TcpSocket() {
+TcpSocket::TcpSocket(int backLogSize) : mBackLogSize(backLogSize) {
   if (mFileDescriptor =
           ::socket(/*domain=ip4*/ AF_INET, /*type=tcp*/ SOCK_STREAM,
                    /*default*/ 0);
@@ -33,7 +33,13 @@ void TcpSocket::bind(std::string ipAddress, const uint16_t port) {
   struct ::sockaddr *addr4 = reinterpret_cast<struct ::sockaddr *>(&addr4in);
   if (auto error = ::bind(mFileDescriptor, addr4, sizeof(struct sockaddr_in));
       error)
-    throw std::string(strerror(errno));
+    throw std::string(::strerror(errno));
+}
+
+void TcpSocket::listen() {
+  // FIXME: verify that the back log size is reachable
+  if (auto status = ::listen(mFileDescriptor, mBackLogSize); status != 0)
+    throw std::string(::strerror(errno));
 }
 
 } // namespace tcp_socket
