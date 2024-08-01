@@ -1,8 +1,17 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 namespace tcp_socket {
+struct TcpConnection final {
+  TcpConnection(int fileDescriptor);
+  ~TcpConnection();
+
+  /// File descriptor associated with this connection
+  int mFileDescriptor{-1};
+};
+
 struct TcpSocket final {
   /// Create a new TCP socket over IP network
   TcpSocket(int backLogSize);
@@ -12,6 +21,8 @@ struct TcpSocket final {
   void bind(std::string ipAddress, const uint16_t port);
   /// Mark socket as a listening (passive) one
   void listen();
+  /// Extract the first socket from the backlog and return the connection
+  std::unique_ptr<TcpConnection> accept();
 
 private:
   /// File descriptor associated with the socket

@@ -9,6 +9,10 @@
 #include <unistd.h>
 
 namespace tcp_socket {
+TcpConnection::TcpConnection(int fileDescriptor)
+    : mFileDescriptor(fileDescriptor) {}
+
+TcpConnection::~TcpConnection() { ::close(mFileDescriptor); }
 
 TcpSocket::TcpSocket(int backLogSize) : mBackLogSize(backLogSize) {
   if (mFileDescriptor =
@@ -40,6 +44,13 @@ void TcpSocket::listen() {
   // FIXME: verify that the back log size is reachable
   if (auto status = ::listen(mFileDescriptor, mBackLogSize); status != 0)
     throw std::string(::strerror(errno));
+}
+
+std::unique_ptr<TcpConnection> TcpSocket::accept() {
+  int connFileDescriptor = ::accept(mFileDescriptor, nullptr, nullptr);
+  if (connFileDescriptor == -1)
+    throw std::string(::strerror(errno));
+  return std::make_unique<TcpConnection>(connFileDescriptor);
 }
 
 } // namespace tcp_socket
