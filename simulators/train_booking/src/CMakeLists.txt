@@ -1,1 +1,2 @@
-add_library(TcpSocket ${CMAKE_CURRENT_SOURCE_DIR}/TcpSocket.cpp)
+add_subdirectory(server)
+add_subdirectory(socket)
