@@ -16,13 +16,12 @@ protected:
     }
   }
 
-  void SetUp() override {}
+  void SetUp() override { fillIn(false); }
 
   void TearDown() override {}
 };
 
 TEST_F(TrainTest, AllEmpty) {
-  fillIn(false);
   EXPECT_THAT(train.getVacantCarriages(),
               ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 }
@@ -38,4 +37,32 @@ TEST_F(TrainTest, Only2nd3rdAnd6thAvailable) {
   train.mCarriages[3][17] = false;
   train.mCarriages[6][13] = false;
   EXPECT_THAT(train.getVacantCarriages(), ElementsAre(2, 3, 6));
+}
+
+TEST_F(TrainTest, CarriageOutOfBounts) {
+  EXPECT_ANY_THROW(train.getVacantSeats(999));
+}
+
+TEST_F(TrainTest, AllCarriagesBookedOut) {
+  fillIn(true);
+  for (size_t i = 0; i < app::kNumCarriages; ++i) {
+    EXPECT_THAT(train.getVacantSeats(i), ElementsAre());
+  }
+}
+
+TEST_F(TrainTest, AllCarriagesVacant) {
+  for (size_t i = 0; i < app::kNumCarriages; ++i) {
+    EXPECT_THAT(train.getVacantSeats(i),
+                ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+  }
+}
+
+TEST_F(TrainTest, SomeSeatsBookedInCar6) {
+  train.mCarriages[6][0] = true;
+  train.mCarriages[6][3] = true;
+  train.mCarriages[6][7] = true;
+  train.mCarriages[6][8] = true;
+  train.mCarriages[6][11] = true;
+  EXPECT_THAT(train.getVacantSeats(6),
+              ElementsAre(1, 2, 4, 5, 6, 9, 10, 12, 13, 14));
 }
