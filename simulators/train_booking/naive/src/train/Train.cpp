@@ -16,7 +16,7 @@ std::vector<std::size_t> Train::getVacantSeats(std::size_t carriage) {
   return mCarriages.at(carriage) | ranges::views::enumerate |
          ranges::views::filter([](auto const &kv) { return !kv.second; }) |
          ranges::views::transform([](auto const &kv) { return kv.first; }) |
-         ranges::views::take(10) | ranges::to<std::vector>;
+         ranges::to<std::vector>;
 }
 
 bool Train::tryToBook(std::size_t carriage, std::size_t seat) {}

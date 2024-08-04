@@ -1,8 +1,10 @@
 #include "Train.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <range/v3/all.hpp>
 
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 
 class TrainTest : public testing::Test {
 protected:
@@ -51,9 +53,9 @@ TEST_F(TrainTest, AllCarriagesBookedOut) {
 }
 
 TEST_F(TrainTest, AllCarriagesVacant) {
+  auto expected = ranges::views::ints(0, 60) | ranges::to<std::vector>;
   for (size_t i = 0; i < app::kNumCarriages; ++i) {
-    EXPECT_THAT(train.getVacantSeats(i),
-                ElementsAre(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
+    EXPECT_THAT(train.getVacantSeats(i), ElementsAreArray(expected));
   }
 }
 
@@ -63,6 +65,25 @@ TEST_F(TrainTest, SomeSeatsBookedInCar6) {
   train.mCarriages[6][7] = true;
   train.mCarriages[6][8] = true;
   train.mCarriages[6][11] = true;
-  EXPECT_THAT(train.getVacantSeats(6),
-              ElementsAre(1, 2, 4, 5, 6, 9, 10, 12, 13, 14));
+  train.mCarriages[6][17] = true;
+  train.mCarriages[6][23] = true;
+  train.mCarriages[6][32] = true;
+  train.mCarriages[6][42] = true;
+  train.mCarriages[6][43] = true;
+  std::vector<int> expected =
+      ranges::views::ints(0, 60) | ranges::to<std::vector>;
+  expected[0] = -1;
+  expected[3] = -1;
+  expected[7] = -1;
+  expected[8] = -1;
+  expected[11] = -1;
+  expected[17] = -1;
+  expected[23] = -1;
+  expected[32] = -1;
+  expected[42] = -1;
+  expected[43] = -1;
+  auto filteredExpected = expected |
+                          ranges::views::filter([](int v) { return v >= 0; }) |
+                          ranges::to<std::vector>;
+  EXPECT_THAT(train.getVacantSeats(6), ElementsAreArray(filteredExpected));
 }
