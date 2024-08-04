@@ -87,3 +87,22 @@ TEST_F(TrainTest, SomeSeatsBookedInCar6) {
                           ranges::to<std::vector>;
   EXPECT_THAT(train.getVacantSeats(6), ElementsAreArray(filteredExpected));
 }
+
+TEST_F(TrainTest, BookOutOfRange) {
+  EXPECT_ANY_THROW(train.tryToBook(13, 0));
+  EXPECT_ANY_THROW(train.tryToBook(0, 99));
+  EXPECT_ANY_THROW(train.tryToBook(13, 99));
+}
+
+TEST_F(TrainTest, BookSuccess) {
+  EXPECT_TRUE(train.tryToBook(0, 0));
+  EXPECT_TRUE(train.tryToBook(3, 42));
+  EXPECT_TRUE(train.tryToBook(6, 13));
+}
+
+TEST_F(TrainTest, BookFailure) {
+  fillIn(true);
+  EXPECT_FALSE(train.tryToBook(0, 0));
+  EXPECT_FALSE(train.tryToBook(3, 42));
+  EXPECT_FALSE(train.tryToBook(6, 13));
+}
