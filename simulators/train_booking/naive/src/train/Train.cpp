@@ -3,14 +3,13 @@
 
 namespace app {
 std::vector<std::size_t> Train::getVacantCarriages() {
-  std::vector<std::size_t> result;
-  result.reserve(kNumCarriages);
-  for (auto const &[index, car] : mCarriages | ranges::views::enumerate) {
-    if (ranges::any_of(car, [](bool v) { return !v; })) {
-      result.push_back(index);
-    }
-  }
-  return std::move(result);
+  return mCarriages | ranges::views::transform([](auto const &car) {
+           return ranges::any_of(car, [](bool v) { return !v; });
+         }) |
+         ranges::views::enumerate |
+         ranges::views::filter([](auto const &kv) { return kv.second; }) |
+         ranges::views::transform([](auto const &kv) { return kv.first; }) |
+         ranges::to<std::vector>;
 }
 
 std::vector<std::size_t> Train::getVacantSeats(std::size_t carriage) {
