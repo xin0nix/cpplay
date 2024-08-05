@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package exchange_format;
+
+/// Each client sends some unique meta-data to be identified among others
+message ClientMetaData {
+  bytes uuid = 1;
+}
+
+/// Carriage is fully specified by its id
+message Carriage {
+  uint32 carriage_id = 1;
+}
+
+message Seat {
+  Carriage carriage = 1;
+  uint32 seat_id = 2;
+}
+
+/// In response to get vacant carriages request from a user, the server
+/// returs (potentially empty) list of Carriage's with some vacant seats
+message VacantCarriagesResponse {
+  ClientMetaData client = 1;
+  repeated Carriage carriages = 2;
+}
+
+/// In response to "get vacant seats" request from a user, the server
+/// returns Carriage id and (possibly empty) list of vacant seats
+message VacantSeatsResponse {
+  ClientMetaData client = 1;
+  repeated Seat seats = 3;
+}
+
+message BookingResponse {
+  ClientMetaData client = 1;
+  repeated Seat seats = 2;
+  bool success = 3;
+}
+
+message ErrorResponse {
+  string message = 1;
+}
+
+/// A response message from the server must be of the Response type
+message Response {
+  oneof payload {
+    VacantCarriagesResponse vacant_carriages = 1;
+    VacantSeatsResponse vacant_seats = 2;
+    ErrorResponse error = 3;
+  } 
+}
+
+message VacantCarriagesRequest {
+  ClientMetaData client = 1;
+}
+
+message VacantSeatsRequest {
+  ClientMetaData client = 1;
+  Carriage carriage = 2;
+}
+
+message BookingRequest {
+  ClientMetaData client = 1;
+  repeated Seat seats = 2;
+}
+
+message Request {
+  oneof payload {
+    VacantCarriagesRequest vacant_carriages = 1;
+    VacantSeatsRequest vacant_seats = 2;
+    BookingRequest booking = 3;
+  }
+}

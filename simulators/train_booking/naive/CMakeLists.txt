@@ -13,6 +13,7 @@ endif()
 
 # TODO: use fetch content instead, to use latest versions
 find_package(range-v3 REQUIRED)
+find_package(Protobuf REQUIRED)
 
 add_subdirectory(src)
 add_subdirectory(test)

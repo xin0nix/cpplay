@@ -47,14 +47,14 @@ TEST_F(TrainTest, CarriageOutOfBounts) {
 
 TEST_F(TrainTest, AllCarriagesBookedOut) {
   fillIn(true);
-  for (size_t i = 0; i < app::kNumCarriages; ++i) {
+  for (auto i : ranges::views::iota(0U, app::kNumCarriages)) {
     EXPECT_THAT(train.getVacantSeats(i), ElementsAre());
   }
 }
 
 TEST_F(TrainTest, AllCarriagesVacant) {
   auto expected = ranges::views::ints(0, 60) | ranges::to<std::vector>;
-  for (size_t i = 0; i < app::kNumCarriages; ++i) {
+  for (auto i : ranges::views::iota(0U, app::kNumCarriages)) {
     EXPECT_THAT(train.getVacantSeats(i), ElementsAreArray(expected));
   }
 }
@@ -89,20 +89,31 @@ TEST_F(TrainTest, SomeSeatsBookedInCar6) {
 }
 
 TEST_F(TrainTest, BookOutOfRange) {
-  EXPECT_ANY_THROW(train.tryToBook(13, 0));
-  EXPECT_ANY_THROW(train.tryToBook(0, 99));
-  EXPECT_ANY_THROW(train.tryToBook(13, 99));
+  EXPECT_ANY_THROW(train.tryToBook(std::vector<app::CarAndSeat>{}));
+  EXPECT_ANY_THROW(train.tryToBook({{13, 0}}));
+  EXPECT_ANY_THROW(train.tryToBook({{0, 99}}));
+  EXPECT_ANY_THROW(train.tryToBook({{13, 99}}));
 }
 
-TEST_F(TrainTest, BookSuccess) {
-  EXPECT_TRUE(train.tryToBook(0, 0));
-  EXPECT_TRUE(train.tryToBook(3, 42));
-  EXPECT_TRUE(train.tryToBook(6, 13));
-}
-
-TEST_F(TrainTest, BookFailure) {
-  fillIn(true);
-  EXPECT_FALSE(train.tryToBook(0, 0));
-  EXPECT_FALSE(train.tryToBook(3, 42));
-  EXPECT_FALSE(train.tryToBook(6, 13));
+TEST_F(TrainTest, Book) {
+  {
+    SCOPED_TRACE("Book ok");
+    EXPECT_TRUE(train.tryToBook({{0, 0}, {3, 42}, {6, 13}}));
+  }
+  {
+    SCOPED_TRACE("Full match - failure");
+    EXPECT_FALSE(train.tryToBook({{0, 0}, {3, 42}, {6, 13}}));
+  }
+  {
+    SCOPED_TRACE("Partial match - failure");
+    EXPECT_FALSE(train.tryToBook({{1, 1}, {6, 13}}));
+    EXPECT_FALSE(train.tryToBook({{7, 13}, {0, 0}}));
+    EXPECT_FALSE(train.tryToBook({{3, 42}}));
+    EXPECT_FALSE(train.tryToBook({{3, 42}, {7, 13}}));
+  }
+  {
+    SCOPED_TRACE("Book again some empty seats - ok");
+    EXPECT_TRUE(train.tryToBook({{1, 1}}));
+    EXPECT_TRUE(train.tryToBook({{7, 13}}));
+  }
 }
