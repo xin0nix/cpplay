@@ -1,13 +1,13 @@
 #include "ExchangeFormat.hpp"
 
 namespace app {
-MessagePtr toVacantCarsResponse(std::span<Car> cars) {
+
+exchange_format::Response toResponse(response::Variants &&errorMessage) {
   // TODO:
-  return nullptr;
 }
-MessagePtr toVacantSeatsResponse(std::span<CarAndSeat> seats) {
+
+request::Variants fromRequest(exchange_format::Request &&request) {
   // TODO:
-  return nullptr;
 }
 
 } // namespace app
