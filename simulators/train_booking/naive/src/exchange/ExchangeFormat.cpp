@@ -2,11 +2,15 @@
 
 namespace app {
 
-exchange_format::Response toResponse(response::Variants &&errorMessage) {
+void setClientMetaData(exchange_format::Response &response, UniqUserId uuid) {
   // TODO:
 }
 
-request::Variants fromRequest(exchange_format::Request &&request) {
+exchange_format::Response toResponse(response::Variants &response) {
+  // TODO:
+}
+
+request::Variants fromRequest(exchange_format::Request &request) {
   // TODO:
 }
 

@@ -12,6 +12,7 @@ message Carriage {
   uint32 carriage_id = 1;
 }
 
+/// Seat includes information about the carriage it belongs
 message Seat {
   Carriage carriage = 1;
   uint32 seat_id = 2;
@@ -20,54 +21,69 @@ message Seat {
 /// In response to get vacant carriages request from a user, the server
 /// returs (potentially empty) list of Carriage's with some vacant seats
 message VacantCarriagesResponse {
-  ClientMetaData client = 1;
   repeated Carriage carriages = 2;
 }
 
 /// In response to "get vacant seats" request from a user, the server
 /// returns Carriage id and (possibly empty) list of vacant seats
 message VacantSeatsResponse {
-  ClientMetaData client = 1;
   repeated Seat seats = 3;
 }
 
+/// In response to "try to book" request from a user, the server returns
+/// - either a list of booked seats (potentially in different carrieages)
+/// - or nothing and failure status
 message BookingResponse {
-  ClientMetaData client = 1;
   repeated Seat seats = 2;
   bool success = 3;
 }
 
+/// A textual description of an error
 message ErrorResponse {
-  string message = 1;
+  string message = 2;
+}
+
+/// A response containing some profile data like user name etc
+message ProfileResponse {
+  string firstName = 2;
+  string lastName = 3;
 }
 
 /// A response message from the server must be of the Response type
 message Response {
+  ClientMetaData client = 1;
   oneof payload {
-    VacantCarriagesResponse vacant_carriages = 1;
-    VacantSeatsResponse vacant_seats = 2;
-    ErrorResponse error = 3;
+    VacantCarriagesResponse vacant_carriages = 2;
+    VacantSeatsResponse vacant_seats = 3;
+    ErrorResponse error = 4;
   } 
 }
 
+/// User may request to get a list of carriages with at least one empty seat
 message VacantCarriagesRequest {
-  ClientMetaData client = 1;
 }
 
+/// User may request to get a list of seats in a particular carriage
 message VacantSeatsRequest {
-  ClientMetaData client = 1;
   Carriage carriage = 2;
 }
 
+/// User may try to book a number of seats in any cars (including seats in different cars)
 message BookingRequest {
-  ClientMetaData client = 1;
   repeated Seat seats = 2;
 }
 
+/// User may request his/her profile meta-data given the client id
+message ProfileRequest {
+}
+
+/// Collection of all possible user requests
 message Request {
+  ClientMetaData client = 1;
   oneof payload {
-    VacantCarriagesRequest vacant_carriages = 1;
-    VacantSeatsRequest vacant_seats = 2;
-    BookingRequest booking = 3;
+    VacantCarriagesRequest vacant_carriages = 2;
+    VacantSeatsRequest vacant_seats = 3;
+    BookingRequest booking = 4;
+    ProfileRequest profile = 5;
   }
 }
