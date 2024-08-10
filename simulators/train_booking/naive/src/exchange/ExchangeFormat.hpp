@@ -12,25 +12,30 @@ template <class... Ts> struct overloaded : Ts... {
 };
 
 using UniqUserId = std::string;
+using CorrelationId = std::string;
 
 namespace response {
 struct Error {
   std::string message;
 };
 struct VacantCarriages {
-  std::vector<Car> vacant_carriages;
+  std::vector<Car> cars;
 };
 struct VacantSeats {
   std::vector<CarAndSeat> seats;
 };
-struct Profile {
-  std::string FirstName;
-  std::string LastName;
+struct BookingAttempt {
+  bool success;
 };
-using Variants = std::variant<Error, VacantCarriages, VacantCarriages, Profile>;
+struct Profile {
+  std::string firstName;
+  std::string lastName;
+};
+using Variants =
+    std::variant<Error, VacantCarriages, VacantSeats, Profile, BookingAttempt>;
 } // namespace response
 exchange_format::Response toResponse(response::Variants &&response);
-void setClientMetaData(exchange_format::Response &response, UniqUserId uuid);
+void setClientMetaData(exchange_format::Response &response, UniqUserId uuid, CorrelationId corId);
 
 namespace request {
 struct VacantCars {};
@@ -44,6 +49,6 @@ struct Profile {};
 using Variants = std::variant<VacantCars, VacantSeats, TryToBook, Profile>;
 } // namespace request
 request::Variants fromRequest(exchange_format::Request &request);
-UniqUserId getClientMetaData(exchange_format::Request &request);
+std::pair<UniqUserId, CorrelationId> getClientMetaData(exchange_format::Request &request);
 
 } // namespace app

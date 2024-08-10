@@ -5,6 +5,7 @@ package exchange_format;
 /// Each client sends some unique meta-data to be identified among others
 message ClientMetaData {
   bytes uuid = 1;
+  bytes correlation_id = 2;
 }
 
 /// Carriage is fully specified by its id
@@ -30,11 +31,8 @@ message VacantSeatsResponse {
   repeated Seat seats = 1;
 }
 
-/// In response to "try to book" request from a user, the server returns
-/// - either a list of booked seats (potentially in different carrieages)
-/// - or nothing and failure status
+/// In response to "try to book" request from a user, the server returns status
 message BookingResponse {
-  repeated Seat seats = 1;
   bool success = 2;
 }
 
@@ -56,6 +54,8 @@ message Response {
     VacantCarriagesResponse vacant_carriages = 2;
     VacantSeatsResponse vacant_seats = 3;
     ErrorResponse error = 4;
+    ProfileResponse profile = 5;
+    BookingResponse booking = 6;
   } 
 }
 
