@@ -6,6 +6,11 @@
 
 namespace app {
 
+// helper type for the visitor
+template <class... Ts> struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+
 using UniqUserId = std::string;
 
 namespace response {

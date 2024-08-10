@@ -9,7 +9,16 @@ void setClientMetaData(exchange_format::Response &response, UniqUserId uuid) {
 }
 
 exchange_format::Response toResponse(response::Variants &response) {
-  // TODO:
+  // TODO: not implemented
+  return std::visit(
+      overloaded{
+          [](response::Error err) { return exchange_format::Response{}; },
+          [](response::Profile profile) { return exchange_format::Response{}; },
+          [](response::VacantCarriages vacantCars) {
+            return exchange_format::Response{};
+          },
+      },
+      response);
 }
 
 request::Variants fromRequest(exchange_format::Request &request) {
