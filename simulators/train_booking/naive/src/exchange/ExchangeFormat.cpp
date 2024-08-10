@@ -22,19 +22,21 @@ request::Variants fromRequest(exchange_format::Request &request) {
     auto carId = request.vacant_seats().carriage().carriage_id();
     // While internal train API allows for gathering information from multiple
     // carriages, it is not provided to the outer world
-    return request::VacantSeats{{carId}};
+    return request::VacantSeats{.cars = {carId}};
   }
   case Request::kBooking: {
-    request.booking().seats() |
-        ranges::views::transform([](auto &&kv) -> CarAndSeat {
-          return CarAndSeat{
-              kv.carriage().carriage_id(),
-              kv.seat_id(),
-          };
-        });
-  } break;
+    return request::TryToBook{
+        .seats = request.booking().seats() |
+                 ranges::views::transform([](auto &&kv) -> CarAndSeat {
+                   return CarAndSeat{
+                       kv.carriage().carriage_id(),
+                       kv.seat_id(),
+                   };
+                 }) |
+                 ranges::to<std::vector>};
+  }
   case Request::kProfile: {
-    return {};
+    return request::Profile{};
   }
   default:
     break;
