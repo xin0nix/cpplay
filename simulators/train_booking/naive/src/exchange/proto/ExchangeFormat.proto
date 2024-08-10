@@ -21,32 +21,32 @@ message Seat {
 /// In response to get vacant carriages request from a user, the server
 /// returs (potentially empty) list of Carriage's with some vacant seats
 message VacantCarriagesResponse {
-  repeated Carriage carriages = 2;
+  repeated Carriage carriages = 1;
 }
 
 /// In response to "get vacant seats" request from a user, the server
 /// returns Carriage id and (possibly empty) list of vacant seats
 message VacantSeatsResponse {
-  repeated Seat seats = 3;
+  repeated Seat seats = 1;
 }
 
 /// In response to "try to book" request from a user, the server returns
 /// - either a list of booked seats (potentially in different carrieages)
 /// - or nothing and failure status
 message BookingResponse {
-  repeated Seat seats = 2;
-  bool success = 3;
+  repeated Seat seats = 1;
+  bool success = 2;
 }
 
 /// A textual description of an error
 message ErrorResponse {
-  string message = 2;
+  string message = 1;
 }
 
 /// A response containing some profile data like user name etc
 message ProfileResponse {
-  string firstName = 2;
-  string lastName = 3;
+  string firstName = 1;
+  string lastName = 2;
 }
 
 /// A response message from the server must be of the Response type
@@ -65,12 +65,12 @@ message VacantCarriagesRequest {
 
 /// User may request to get a list of seats in a particular carriage
 message VacantSeatsRequest {
-  Carriage carriage = 2;
+  Carriage carriage = 1;
 }
 
 /// User may try to book a number of seats in any cars (including seats in different cars)
 message BookingRequest {
-  repeated Seat seats = 2;
+  repeated Seat seats = 1;
 }
 
 /// User may request his/her profile meta-data given the client id

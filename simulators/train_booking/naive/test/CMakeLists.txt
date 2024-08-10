@@ -1,4 +1,4 @@
-project(NaiveSimUnitTests)
+# project(NaiveSimUnitTests)
 
 include(FetchContent)
 
@@ -14,9 +14,11 @@ FetchContent_MakeAvailable(gmock)
 
 enable_testing()
 
-add_executable(UnitTests ${CMAKE_CURRENT_SOURCE_DIR}/TrainTest.cpp)
+add_executable(UnitTests ${CMAKE_CURRENT_SOURCE_DIR}/ExchangeFormatTest.cpp
+                         ${CMAKE_CURRENT_SOURCE_DIR}/TrainTest.cpp)
 
-target_link_libraries(UnitTests PRIVATE Train gtest_main gmock_main)
+target_link_libraries(UnitTests PRIVATE Train ExchangeFormat gtest_main
+                                        gmock_main)
 
 # Add test
 add_test(NAME UnitTests COMMAND UnitTests)

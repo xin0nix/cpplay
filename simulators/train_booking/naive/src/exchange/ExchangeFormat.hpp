@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ExchangeFormat.pb.h"
 #include "Train.hpp"
 #include <variant>
