@@ -35,8 +35,8 @@ using Variants =
     std::variant<Error, VacantCarriages, VacantSeats, Profile, BookingAttempt>;
 } // namespace response
 exchange_format::Response toResponse(response::Variants &&response);
-void setClientMetaData(exchange_format::Response &response, UniqUserId uuid, CorrelationId corId);
-
+void setClientMetaData(exchange_format::Response &response,
+                       const std::pair<UniqUserId, CorrelationId> &profile);
 namespace request {
 struct VacantCars {};
 struct VacantSeats {
@@ -49,6 +49,7 @@ struct Profile {};
 using Variants = std::variant<VacantCars, VacantSeats, TryToBook, Profile>;
 } // namespace request
 request::Variants fromRequest(exchange_format::Request &request);
-std::pair<UniqUserId, CorrelationId> getClientMetaData(exchange_format::Request &request);
+std::pair<UniqUserId, CorrelationId>
+getClientMetaData(exchange_format::Request &request);
 
 } // namespace app

@@ -4,13 +4,13 @@
 
 namespace app {
 
-void setClientMetaData(exchange_format::Response &response, UniqUserId uuid,
-                       CorrelationId corId) {
-  response.mutable_client()->set_uuid(std::move(uuid));
-  // TODO: set correlation id
+void setClientMetaData(exchange_format::Response &response,
+                       const std::pair<UniqUserId, CorrelationId> &profile) {
+  response.mutable_client()->set_uuid(profile.first);
+  response.mutable_client()->set_correlation_id(profile.second);
 }
 
-exchange_format::Response toResponse(response::Variants &response) {
+exchange_format::Response toResponse(response::Variants &&response) {
   return std::visit(
       overloaded{
           [](response::Error err) {
@@ -101,7 +101,9 @@ request::Variants fromRequest(exchange_format::Request &request) {
 
 std::pair<UniqUserId, CorrelationId>
 getClientMetaData(exchange_format::Request &request) {
-  // TODO: correlation id
-  return {request.client().uuid(), ""};
+  return {
+      request.client().uuid(),
+      request.client().correlation_id(),
+  };
 }
 } // namespace app

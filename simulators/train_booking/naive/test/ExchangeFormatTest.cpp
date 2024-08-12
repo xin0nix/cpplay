@@ -52,3 +52,77 @@ TEST(ExchangeFormatTest, BookingRequest) {
               ElementsAre(app::CarAndSeat{1, 57}, app::CarAndSeat{2, 13},
                           app::CarAndSeat{2, 29}));
 }
+
+TEST(ExchangeFormatTest, UserProfileRequest) {
+  exchange_format::Request request;
+  request.mutable_client()->set_uuid("johny");
+  request.mutable_client()->set_correlation_id("request1");
+  auto meta = app::getClientMetaData(request);
+  ASSERT_EQ(meta.first, "johny");
+  ASSERT_EQ(meta.second, "request1");
+}
+
+TEST(ExchangeFormatTest, ErrorResponse) {
+  app::response::Error err{"bad"};
+  auto response = app::toResponse(std::move(err));
+  EXPECT_EQ(response.DebugString(), R"(error {
+  message: "bad"
+}
+)");
+}
+
+TEST(ExchangeFormatTest, VacantCarriagesResponse) {
+  app::response::VacantCarriages vcs{
+      .cars =
+          {
+              1,
+              2,
+          },
+  };
+  auto response = app::toResponse(std::move(vcs));
+  EXPECT_EQ(response.DebugString(), R"(vacant_carriages {
+  carriages {
+    carriage_id: 1
+  }
+  carriages {
+    carriage_id: 2
+  }
+}
+)");
+}
+
+TEST(ExchangeFormatTest, VacantSeatsResponse) {
+  app::response::VacantSeats seats{
+      .seats =
+          {
+              {1, 23},
+              {2, 39},
+          },
+  };
+  auto response = app::toResponse(std::move(seats));
+  EXPECT_EQ(response.DebugString(), R"(vacant_seats {
+  seats {
+    carriage {
+      carriage_id: 1
+    }
+    seat_id: 23
+  }
+  seats {
+    carriage {
+      carriage_id: 2
+    }
+    seat_id: 39
+  }
+}
+)");
+}
+
+TEST(ExchangeFormatTest, UserProfileResponse) {
+  exchange_format::Response response;
+  app::setClientMetaData(response, {"johny", "request1"});
+  EXPECT_EQ(response.DebugString(), R"(client {
+  uuid: "johny"
+  correlation_id: "request1"
+}
+)");
+}
