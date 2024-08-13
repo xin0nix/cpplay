@@ -1,6 +1,6 @@
-
 import socket
 import argparse
+import ExchangeFormat_pb2
 
 def main():
     parser = argparse.ArgumentParser(description='Connect to a server using a specified host and port.')
