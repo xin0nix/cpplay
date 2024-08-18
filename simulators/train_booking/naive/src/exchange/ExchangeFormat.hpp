@@ -28,8 +28,7 @@ struct BookingAttempt {
   bool success;
 };
 struct Profile {
-  std::string firstName;
-  std::string lastName;
+  bool success;
 };
 using Variants =
     std::variant<Error, VacantCarriages, VacantSeats, Profile, BookingAttempt>;
@@ -45,7 +44,10 @@ struct VacantSeats {
 struct TryToBook {
   std::vector<CarAndSeat> seats;
 };
-struct Profile {};
+struct Profile {
+  std::string firstName;
+  std::string lastName;
+};
 using Variants = std::variant<VacantCars, VacantSeats, TryToBook, Profile>;
 } // namespace request
 request::Variants fromRequest(exchange_format::Request &request);

@@ -33,7 +33,7 @@ message VacantSeatsResponse {
 
 /// In response to "try to book" request from a user, the server returns status
 message BookingResponse {
-  bool success = 2;
+  bool success = 1;
 }
 
 /// A textual description of an error
@@ -43,8 +43,7 @@ message ErrorResponse {
 
 /// A response containing some profile data like user name etc
 message ProfileResponse {
-  string firstName = 1;
-  string lastName = 2;
+  bool success = 1;
 }
 
 /// A response message from the server must be of the Response type
@@ -75,6 +74,8 @@ message BookingRequest {
 
 /// User may request his/her profile meta-data given the client id
 message ProfileRequest {
+  string firstName = 1;
+  string lastName = 2;
 }
 
 /// Collection of all possible user requests

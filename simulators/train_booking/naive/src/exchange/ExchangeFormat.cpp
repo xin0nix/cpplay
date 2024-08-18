@@ -52,8 +52,7 @@ exchange_format::Response toResponse(response::Variants &&response) {
           [](response::Profile profile) {
             exchange_format::Response rp;
             auto profileRp = new exchange_format::ProfileResponse{};
-            profileRp->set_firstname(profile.firstName);
-            profileRp->set_lastname(profile.lastName);
+
             rp.set_allocated_profile(profileRp);
             return rp;
           },
@@ -91,7 +90,10 @@ request::Variants fromRequest(exchange_format::Request &request) {
                  ranges::to<std::vector>};
   }
   case Request::kProfile: {
-    return request::Profile{};
+    return request::Profile{
+        .firstName = request.profile().firstname(),
+        .lastName = request.profile().lastname(),
+    };
   }
   default:
     break;
