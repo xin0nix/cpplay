@@ -1,6 +1,3 @@
 # IDE and CI
 build/
-.vscode/
-
-/bazel-*
-/MODULE.bazel.*
+.cache/
