@@ -1,3 +1,4 @@
+#include "Context.hpp"
 #include "ExchangeFormat.hpp"
 #include "TcpSocket.hpp"
 #include <boost/program_options.hpp>
@@ -40,6 +41,7 @@ int main(int ac, char *av[]) {
     socket.bind(address, port);
     socket.listen(backlog);
     std::cout << "Waiting for incoming connections..." << std::endl;
+    auto context = app::Context::create();
     for (;;) {
       auto conn = socket.accept();
       std::cout << "Client IP: " << conn->mAddress << std::endl;
@@ -49,7 +51,21 @@ int main(int ac, char *av[]) {
       std::string message(buffer, bytesRead);
       exchange_format::Request req;
       req.ParseFromString(message);
-      std::cout << "Raw message: " << req.DebugString() << std::endl;
+      auto [userId, correlationId] = app::getClientMetaData(req);
+      auto reqVar = app::fromRequest(req);
+      std::visit(app::overloaded{
+                     [](app::request::Profile &profile) {},
+                     [](app::request::VacantCars &cars) {},
+                     [](app::request::VacantSeats &seats) {},
+                     [](app::request::TryToBook &booking) {},
+                 },
+                 reqVar);
+      app::RequestHandle handle{
+          .mContext = context,
+          .mUserId = std::move(userId),
+          .mCorrelationId = std::move(correlationId),
+      };
+      // TODO: try to handle user profile request
       sleep(1);
     }
   } catch (std::string &error) {
