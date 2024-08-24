@@ -1,8 +1,24 @@
 import socket
 import argparse
-import uuid
+import string
+import random
 
 import ExchangeFormat_pb2
+
+def generate_pseudo_uuid(length=8):
+    """
+    Generate a random string of printable ASCII characters.
+    Good enough for a pet project, uuid is too long.
+
+    Args:
+        length (int, optional): The length of the string. Defaults to 8.
+
+    Returns:
+        str: A random string of printable ASCII characters.
+    """
+    printable_chars = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(printable_chars) for _ in range(length))
+    return random_string.encode('ascii')
 
 def main():
     parser = argparse.ArgumentParser(
@@ -24,8 +40,8 @@ def main():
         print(f"Connected to {HOST}:{PORT}")
         
         client = ExchangeFormat_pb2.ClientMetaData()
-        client.uuid = uuid.uuid4().bytes[:8]
-        client.correlation_id = uuid.uuid4().bytes[:8]
+        client.uuid = generate_pseudo_uuid()
+        client.correlation_id = generate_pseudo_uuid()
 
         profile = ExchangeFormat_pb2.ProfileRequest()
         profile.firstName = "joe"
