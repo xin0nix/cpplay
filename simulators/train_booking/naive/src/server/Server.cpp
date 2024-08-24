@@ -1,4 +1,4 @@
-#include "Context.hpp"
+#include "BookingService.hpp"
 #include "ExchangeFormat.hpp"
 #include "TcpSocket.hpp"
 #include <boost/program_options.hpp>
@@ -41,7 +41,7 @@ int main(int ac, char *av[]) {
     socket.bind(address, port);
     socket.listen(backlog);
     std::cout << "Waiting for incoming connections..." << std::endl;
-    auto context = app::Context::create();
+    app::BookingService bookingService;
     for (;;) {
       auto conn = socket.accept();
       std::cout << "Client IP: " << conn->mAddress << std::endl;
@@ -51,22 +51,27 @@ int main(int ac, char *av[]) {
       std::string message(buffer, bytesRead);
       exchange_format::Request req;
       req.ParseFromString(message);
-      auto [userId, correlationId] = app::getClientMetaData(req);
+      const auto [userId, correlationId] = app::getClientMetaData(req);
       auto reqVar = app::fromRequest(req);
-      std::visit(app::overloaded{
-                     [](app::request::Profile &profile) {},
-                     [](app::request::VacantCars &cars) {},
-                     [](app::request::VacantSeats &seats) {},
-                     [](app::request::TryToBook &booking) {},
-                 },
-                 reqVar);
-      app::RequestHandle handle{
-          .mContext = context,
-          .mUserId = std::move(userId),
-          .mCorrelationId = std::move(correlationId),
-      };
-      // TODO: try to handle user profile request
-      sleep(1);
+      auto responseBody = std::visit(
+          app::overloaded{
+              [&userId, &bookingService](app::request::Profile &msg) {
+                return bookingService.handle(userId, msg);
+              },
+              [&userId, &bookingService](app::request::VacantCars &msg) {
+                return bookingService.handle(userId, msg);
+              },
+              [&userId, &bookingService](app::request::VacantSeats &msg) {
+                return bookingService.handle(userId, msg);
+              },
+              [&userId, &bookingService](app::request::TryToBook &msg) {
+                return bookingService.handle(userId, msg);
+              },
+          },
+          reqVar);
+      auto response = app::toResponse(std::move(responseBody));
+      app::setClientMetaData(response, {userId, correlationId});
+      // TODO: send the actual response!
     }
   } catch (std::string &error) {
     std::cerr << error << std::endl;
