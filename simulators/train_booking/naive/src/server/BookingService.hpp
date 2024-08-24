@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "ExchangeFormat.hpp"
+#include "Train.hpp"
 
 namespace app {
 struct BookingService {
@@ -20,6 +21,7 @@ private:
     std::string mLastName;
   };
 
+  Train mTrain;
   std::unordered_map<UUIDType /*uuid*/, UserProfile> mUsers;
 };
 } // namespace app
