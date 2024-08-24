@@ -27,22 +27,22 @@ int main(int ac, char *av[]) {
   }
 
   // TODO: server logic
-  try {
-    int port = varMap["port"].as<int>();
-    std::string address = varMap["address"].as<std::string>();
-    int backlog = varMap["backlog"].as<int>();
+  int port = varMap["port"].as<int>();
+  std::string address = varMap["address"].as<std::string>();
+  int backlog = varMap["backlog"].as<int>();
 
-    std::cout << "Port: " << port << std::endl;
-    std::cout << "Address: " << address << std::endl;
-    std::cout << "Backlog: " << backlog << std::endl;
+  std::cout << "Port: " << port << std::endl;
+  std::cout << "Address: " << address << std::endl;
+  std::cout << "Backlog: " << backlog << std::endl;
 
-    using tcp_socket::TcpSocket;
-    TcpSocket socket;
-    socket.bind(address, port);
-    socket.listen(backlog);
-    std::cout << "Waiting for incoming connections..." << std::endl;
-    app::BookingService bookingService;
-    for (;;) {
+  using tcp_socket::TcpSocket;
+  TcpSocket socket;
+  socket.bind(address, port);
+  socket.listen(backlog);
+  std::cout << "Waiting for incoming connections..." << std::endl;
+  app::BookingService bookingService;
+  for (;;) {
+    try {
       auto conn = socket.accept();
       std::cout << "Client IP: " << conn->mAddress << std::endl;
       std::cout << "Client Port: " << conn->mPort << std::endl;
@@ -72,13 +72,10 @@ int main(int ac, char *av[]) {
       auto response = app::toResponse(std::move(responseBody));
       app::setClientMetaData(response, {userId, correlationId});
       // TODO: send the actual response!
+    } catch (...) {
+      // TODO: try to send response to the active user
+      std::cerr << "Unknown error, disconnect" << std::endl;
     }
-  } catch (std::string &error) {
-    std::cerr << error << std::endl;
-    return EXIT_FAILURE;
-  } catch (...) {
-    std::cerr << "Unknown error" << std::endl;
-    return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
 }
