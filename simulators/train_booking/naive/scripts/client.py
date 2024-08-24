@@ -4,7 +4,6 @@ import uuid
 
 import ExchangeFormat_pb2
 
-
 def main():
     parser = argparse.ArgumentParser(
         description="Connect to a server using a specified host and port."
@@ -23,9 +22,19 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         print(f"Connected to {HOST}:{PORT}")
+        
+        client = ExchangeFormat_pb2.ClientMetaData()
+        client.uuid = uuid.uuid4().bytes[:8]
+        client.correlation_id = uuid.uuid4().bytes[:8]
+
+        profile = ExchangeFormat_pb2.ProfileRequest()
+        profile.firstName = "joe"
+        profile.lastName = "strawinsky"
+
         req = ExchangeFormat_pb2.Request()
-        req.client.uuid = uuid.uuid4().bytes[:8]
-        req.client.correlation_id = uuid.uuid4().bytes[:4]
+        req.client.CopyFrom(client)
+        req.profile.CopyFrom(profile)
+
         print("Sending request: ", req)
         s.sendall(req.SerializeToString())
 
