@@ -5,20 +5,86 @@ import random
 
 import ExchangeFormat_pb2
 
+
 def generate_pseudo_uuid(length=8):
-    """
-    Generate a random string of printable ASCII characters.
-    Good enough for a pet project, uuid is too long.
-
-    Args:
-        length (int, optional): The length of the string. Defaults to 8.
-
-    Returns:
-        str: A random string of printable ASCII characters.
-    """
     printable_chars = string.ascii_letters + string.digits
-    random_string = ''.join(random.choice(printable_chars) for _ in range(length))
-    return random_string.encode('ascii')
+    random_string = "".join(random.choice(printable_chars) for _ in range(length))
+    return random_string.encode("ascii")
+
+
+def get_random_name():
+    first_names = [
+            "Aaron",
+            "Adam",
+            "Alan",
+            "Albert",
+            "Alex",
+            "Carl",
+            "Christopher",
+            "Charles",
+            "Conrad",
+            "Craig",
+            "Jasper",
+            "James",
+            "Jeffrey",
+            "John",
+            "Jonathan",
+            "Joseph",
+            "Brian",
+            "Burton",
+            "Buddy",
+            "William",
+            "Walter",
+            "Warren",
+            "Anya",
+            "Ariel",
+            "Arya",
+            "Ash",
+            "Ainslie",
+            "Audrey",
+            "Ava",
+            "Badra",
+            "Beatrice",
+            "Belinda",
+            "Reagan",
+            "Reese",
+            "Riley",
+            "Robyn",
+            "Rose",
+            "Rosie",
+            "Rosemary",
+            "Roxanne",
+            "Ruby",
+            "Sadie",
+        ]
+    last_names = [
+            "Smith",
+            "Johnson",
+            "Williams",
+            "Brown",
+            "Jones",
+            "Miller",
+            "Davis",
+            "Garcia",
+            "Rodriguez",
+            "Wilson",
+            "Martinez",
+            "Taylor",
+            "Anderson",
+            "Thomas",
+            "Hernandez",
+            "Moore",
+            "Lee",
+            "Gonzalez",
+            "Harris",
+            "Martin",
+            "Jackson",
+            "Thompson",
+        ]
+    first_name = random.choice(list(first_names))
+    last_name = random.choice(list(last_names))
+    return (first_name, last_name)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -38,14 +104,15 @@ def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         print(f"Connected to {HOST}:{PORT}")
-        
+
         client = ExchangeFormat_pb2.ClientMetaData()
         client.uuid = generate_pseudo_uuid()
         client.correlation_id = generate_pseudo_uuid()
 
         profile = ExchangeFormat_pb2.ProfileRequest()
-        profile.firstName = "joe"
-        profile.lastName = "strawinsky"
+        firstName, lastName = get_random_name()
+        profile.firstName = firstName
+        profile.lastName = lastName
 
         req = ExchangeFormat_pb2.Request()
         req.client.CopyFrom(client)
