@@ -121,6 +121,13 @@ def main():
         print("Sending request: ", req)
         s.sendall(req.SerializeToString())
 
+        resp = s.recv(4096)
+        # TODO: deserialize into proto
+        print("Received data: ", resp)
+        response = ExchangeFormat_pb2.Response()
+        response.ParseFromString(resp)
+        print(response)
+
 
 if __name__ == "__main__":
     main()

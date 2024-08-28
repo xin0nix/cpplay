@@ -1,12 +1,36 @@
 #pragma once
 
+#include <exception>
 #include <memory>
+#include <string.h>
 #include <string>
+#include <sys/socket.h>
+#include <unistd.h>
 
 namespace tcp_socket {
+
+class TcpSocketError : public std::exception {
+public:
+  TcpSocketError(int errorCode) : errorCode_(errorCode) {}
+
+  int errorCode() const { return errorCode_; }
+
+  const char *what() const throw() override { return ::strerror(errorCode_); }
+
+private:
+  int errorCode_;
+};
+
 struct TcpConnection final {
+  TcpConnection(int fileDesc, std::string addr, uint16_t port)
+      : mFileDescriptor(fileDesc), mAddress(addr), mPort(port) {}
   ~TcpConnection();
 
+  void dump() const;
+  std::string read();
+  void send(std::string buffer);
+
+private:
   /// File descriptor associated with this connection
   int mFileDescriptor{-1};
   std::string mAddress;

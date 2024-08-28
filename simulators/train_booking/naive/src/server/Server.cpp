@@ -44,11 +44,8 @@ int main(int ac, char *av[]) {
   for (;;) {
     try {
       auto conn = socket.accept();
-      std::cout << "Client IP: " << conn->mAddress << std::endl;
-      std::cout << "Client Port: " << conn->mPort << std::endl;
-      char buffer[1024];
-      int bytesRead = ::read(conn->mFileDescriptor, buffer, sizeof buffer);
-      std::string message(buffer, bytesRead);
+      conn->dump();
+      std::string message = conn->read();
       exchange_format::Request req;
       req.ParseFromString(message);
       const auto [userId, correlationId] = app::getClientMetaData(req);
@@ -71,7 +68,9 @@ int main(int ac, char *av[]) {
           reqVar);
       auto response = app::toResponse(std::move(responseBody));
       app::setClientMetaData(response, {userId, correlationId});
-      // TODO: send the actual response!
+      conn->send(response.SerializeAsString());
+    } catch (tcp_socket::TcpSocketError &err) {
+      std::cerr << "TCP connection error: " << err.what() << std::endl;
     } catch (...) {
       // TODO: try to send response to the active user
       std::cerr << "Unknown error, disconnect" << std::endl;
