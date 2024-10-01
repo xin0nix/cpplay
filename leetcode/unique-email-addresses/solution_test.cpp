@@ -1,12 +1,41 @@
 #include <gtest/gtest.h>
+#include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
+
 using std::string;
 using std::vector;
+using std::unordered_set;
+using std::stringstream;
 
-class Solution {
-public:
-  int numUniqueEmails(vector<string> &emails) {}
+struct Solution {
+  int numUniqueEmails(vector<string> &emails) {
+    unordered_set<string> recepients;
+    for (const auto &mail : emails) {
+      string ss;
+      ss.reserve(mail.size());
+      auto it = mail.cbegin();
+      // Local name
+      while (*it != '@' && *it != '+') {
+        if (*it != '.') {
+          ss.push_back(*it);
+        }
+        ++it;
+      }
+      // Skip everything up to @
+      while (*it != '@') {
+        ++it;
+      }
+      // Get the domain par
+      while (it != mail.cend()) {
+        ss.push_back(*it);
+        ++it;
+      }
+      recepients.insert(std::move(ss));
+    }
+    return recepients.size();
+  }
 };
 
 TEST(UniqueEmailAddressesTest, EmptyTest) {
@@ -32,7 +61,7 @@ TEST(UniqueEmailAddressesTest, BasicLeet2) {
       "test.e.mail+bob.cathy@leetcode.com",
       "testemail+david@lee.tcode.com",
   };
-  EXPECT_EQ(solution.numUniqueEmails(emails), 1);
+  EXPECT_EQ(solution.numUniqueEmails(emails), 2);
 }
 
 TEST(UniqueEmailAddressesTest, DotsAndPlusCombined) {
@@ -44,7 +73,7 @@ TEST(UniqueEmailAddressesTest, DotsAndPlusCombined) {
       "testemail+.@leetcode.com",           "test.email+alex@leetcode.com",
       "test.e.mail+bob.cathy@leetcode.com", "testemail+david@lee.tcode.com",
   };
-  EXPECT_EQ(solution.numUniqueEmails(emails), 1);
+  EXPECT_EQ(solution.numUniqueEmails(emails), 2);
 }
 
 TEST(UniqueEmailAddressesTest, IgnoreAfterPlusTest) {
@@ -66,4 +95,13 @@ TEST(UniqueEmailAddressesTest, SkipDotTest) {
       "testemail.@leetcode.com", "testemail...@leetcode.com",
   };
   EXPECT_EQ(solution.numUniqueEmails(emails), 1);
+}
+
+TEST(UniqueEmailAddressesTest, SameLocalNameDifferentDomains) {
+  Solution solution;
+  vector<string> emails = {
+      "alice@leetcode.com",  "a.lice@leetcode.com", "alice@.leetcode.com",
+      "alice@leet.code.com", "alice@leetcode+.com",
+  };
+  EXPECT_EQ(solution.numUniqueEmails(emails), 4);
 }
