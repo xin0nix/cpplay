@@ -1,0 +1,14 @@
+Checks: >
+  -*,                # Disable all checks by default
+  modernize-*,
+  readability-*,
+  performance-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  clang-analyzer-*
+
+CheckOptions:                 # Limit function size for readability
+  - key: bugprone-argument-comment.StrictMode
+    value: '1'                # Enforce strict argument comments
+
+WarningsAsErrors: '-*'
