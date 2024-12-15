@@ -5,7 +5,10 @@ Checks: >
   performance-*,
   bugprone-*,
   cppcoreguidelines-*,
-  clang-analyzer-*
+  clang-analyzer-*,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-convert-member-functions-to-static
 
 CheckOptions:                 # Limit function size for readability
   - key: bugprone-argument-comment.StrictMode
