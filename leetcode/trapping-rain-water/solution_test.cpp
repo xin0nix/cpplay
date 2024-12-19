@@ -1,10 +1,27 @@
-#include <algorithm>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <algorithm>
 #include <vector>
 
 struct Solution {
-  int trap(std::vector<int> &height) {}
+  int trap(const std::vector<int> &height) {
+    const int len = (int)height.size();
+    int sum = 0;
+    for (int k = 0; k < len; ++k) {
+      int lMax = 0;
+      for (int left = k - 1; left >= 0; --left) {
+        lMax = std::max(lMax, height[left]);
+      }
+      int rMax = 0;
+      for (int right = k + 1; right < len; ++right) {
+        rMax = std::max(rMax, height[right]);
+      }
+      int potential = std::min(lMax, rMax) - height[k];
+      sum += std::max(0, potential);
+    }
+    return sum;
+  }
 };
 
 struct TrappingRainWaterTest : ::testing::Test {};
@@ -55,7 +72,7 @@ TEST_F(TrappingRainWaterTest, MiddlePole) {
 }
 
 TEST_F(TrappingRainWaterTest, ComplexA) {
-  std::vector height{0, 2, 0, 4, 1, 0, 4, 6, 2, 3, 4, 3};
+  std::vector height{0, 2, 0, 4, 1, 0, 3, 6, 2, 3, 4, 3};
   auto res = Solution().trap(height);
   EXPECT_EQ(res, 13);
   std::reverse(height.begin(), height.end());
