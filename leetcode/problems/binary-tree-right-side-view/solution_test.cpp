@@ -109,7 +109,7 @@ struct BruteForce {
           nodeQueue.push_back(r);
       }
     }
-    return std::move(result);
+    return result;
   }
 };
 
