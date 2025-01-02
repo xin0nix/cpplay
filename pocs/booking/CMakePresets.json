@@ -1,0 +1,39 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "gcc-14-debug",
+      "displayName": "GCC 14 Debug",
+      "description": "Debug build with GCC 14 and compile commands",
+      "binaryDir": "${sourceDir}/build-gcc-14",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "gcc-14",
+        "CMAKE_CXX_COMPILER": "g++-14"
+      },
+      "environment": {
+        "CXXFLAGS": "-Wall -Wpedantic"
+      },
+      "generator": "Ninja"
+    },
+    {
+      "name": "clang-debug",
+      "displayName": "Clang Debug",
+      "description": "Debug build with compile commands",
+      "binaryDir": "${sourceDir}/build-clang-19",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "clang-19",
+        "CMAKE_CXX_COMPILER": "clang++-19",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_CXX_STANDARD_LIBRARY": "/usr/lib/llvm-19/share/libc++"
+      },
+      "environment": {
+        "CXXFLAGS": "-Wall -Wpedantic"
+      },
+      "generator": "Ninja"
+    }
+  ]
+}

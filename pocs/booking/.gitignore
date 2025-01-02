@@ -1,0 +1,13 @@
+# Python
+__pycache__
+.venv
+
+# CMake
+/build*
+
+# IDE
+.vscode
+
+# Misc
+.temp
+*_pb2.py

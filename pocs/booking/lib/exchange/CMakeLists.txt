@@ -1,0 +1,5 @@
+add_subdirectory(proto)
+add_library(Exchange Exchange.cpp)
+target_link_libraries(Exchange PUBLIC ExchangeProto)
+include_directories(${ExchangeProto_INCLUDE_DIRS})
+target_include_directories(Exchange PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

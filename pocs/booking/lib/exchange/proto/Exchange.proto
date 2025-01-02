@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package exchange;
+
+message Request {
+  string uuid = 1;
+}
+
+message Error {
+  string what = 1;
+}
+
+message Done {}
+
+message Success {
+  uint64 ticket_num = 1;
+}
+
+message Response {
+  bytes uuid = 1;
+  oneof body {
+    Success ok = 2;
+    Error error = 3;
+    Done done = 4;
+  }
+}
