@@ -1,1 +1,2 @@
+add_subdirectory(coro)
 add_subdirectory(thread_pool)
