@@ -1,4 +1,5 @@
 #include "Exchange.hpp"
+#include "Exchange.pb.h"
 #include "Storage.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -6,6 +7,7 @@
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/program_options.hpp>
+#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <ranges>
@@ -25,36 +27,88 @@ using boost::asio::detached;
 using boost::asio::use_awaitable;
 using boost::asio::ip::tcp;
 
-// Корутина для обработки клиентского подключения
-awaitable<void> handle_client(tcp::socket socket) {
-  try {
-    char data[1024];
-    for (;;) {
-      // Чтение данных из сокета
-      std::size_t n = co_await socket.async_read_some(boost::asio::buffer(data),
-                                                      use_awaitable);
-      // Запись данных обратно в сокет
-      co_await async_write(socket, boost::asio::buffer(data, n), use_awaitable);
+struct Server {
+  // Корутина для обработки клиентского подключения
+  awaitable<void> handle_client(tcp::socket socket) {
+    try {
+      std::array<uint8_t, 1024> messageBuffer;
+      std::string message;
+      for (;;) {
+        // Чтение данных из сокета
+        std::size_t bytesRead = co_await socket.async_read_some(
+            boost::asio::buffer(messageBuffer), use_awaitable);
+        // Узнаем размер сообщения, потом если что дочитаем оставшиеся байты
+        std::span<uint8_t> data(messageBuffer.data(), bytesRead);
+        auto messageLength = exchange::decodeVarint(data);
+        if (!messageLength) {
+          std::printf("Не получилось декодировать размер сообщения, считано "
+                      "байт: %zu\n",
+                      bytesRead);
+          co_return;
+        }
+        rng::copy(data, std::back_inserter(message));
+        while (bytesRead < *messageLength) {
+          // Переиспользуем буффер, выше мы уже скопировали информацию в
+          // сообщение
+          bytesRead = co_await socket.async_read_some(
+              boost::asio::buffer(messageBuffer), use_awaitable);
+          rng::copy(data, std::back_inserter(message));
+        }
+
+        // Сервер работает из предположения что клиент не станет пихать
+        // несколько сообщение подряд. В противном случае передача
+        // рассинхронизируется.
+        if (message.size() != bytesRead) {
+          std::printf(
+              "Количество байтов не совпало с размером proto сообщения: "
+              "%zu != %zu\n",
+              bytesRead, message.size());
+          co_return;
+        }
+
+        exchange::Request request{};
+        if (!request.ParseFromString(message)) {
+          std::printf("Пришло битое proto сообщение");
+          co_return;
+        }
+
+        // TODO: попытка брони
+
+        // TODO: delay
+
+        // TODO: Запись данных обратно в сокет
+        // co_await async_write(socket, boost::asio::buffer(data, n),
+        // use_awaitable);
+      }
+    } catch (std::exception &e) {
+      std::printf("Произошла ошибка при работе с клиентским подключением: %s\n",
+                  e.what());
     }
-  } catch (std::exception &e) {
-    std::printf("Произошла ошибка при работе с клиентским подключением: %s\n",
-                e.what());
   }
-}
 
-// Функция для запуска сервера
-awaitable<void> start_server(tcp::acceptor &acceptor) {
-  for (;;) {
-    // Принятие нового клиентского подключения
-    tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
+  // Корутина основного цикла сервера
+  awaitable<void> start(tcp::acceptor &acceptor) {
+    for (;;) {
+      // Сервер в цикле опрашивает сокет на предмет новых клиентов
+      tcp::socket socket = co_await acceptor.async_accept(use_awaitable);
 
-    // Создание strand для этого клиента
-    auto client_strand = boost::asio::make_strand(acceptor.get_executor());
+      // Мы оборачиваем каждое клиентское подключение в strand чтобы избежать
+      // состояния гонок между его корутинами без доп синхронизации
+      auto client_strand = boost::asio::make_strand(acceptor.get_executor());
 
-    // Запуск корутины для обработки клиента в контексте strand
-    co_spawn(client_strand, handle_client(std::move(socket)), detached);
+      // Запуск корутины для обработки клиента в контексте strand
+      co_spawn(client_strand, handle_client(std::move(socket)), detached);
+
+      // TODO: сохранение "базы данных"
+    }
   }
-}
+
+  Server(fs::path dbPath, std::size_t capacity, std::chrono::milliseconds delay)
+      : storage_(std::move(dbPath), capacity), delay_(delay) {}
+
+  storage::TicketStorage storage_;
+  std::chrono::milliseconds delay_;
+};
 
 int main(int ac, char *av[]) {
   po::options_description desc("Опции командной строки");
@@ -86,8 +140,7 @@ int main(int ac, char *av[]) {
     auto maxBacklog = varMap["max-backlog"].as<uint16_t>();
     fs::path dbPath = varMap["db-path"].as<std::string>();
     auto capacity = varMap["capacity"].as<std::size_t>();
-    // auto delay =
-    // std::chrono::milliseconds(varMap["delay"].as<std::uint64_t>());
+    auto delay = std::chrono::milliseconds(varMap["delay"].as<std::uint64_t>());
 
     std::cout << "Порт: " << port << std::endl;
     std::cout << "Адрес: " << addressArg << std::endl;
@@ -95,7 +148,7 @@ int main(int ac, char *av[]) {
     std::cout << "Свободных мест: " << capacity << std::endl;
     std::cout << "Путь к базе данных: " << dbPath << std::endl;
 
-    storage::TicketStorage storage(dbPath, capacity);
+    Server server(dbPath, capacity, delay);
     boost::asio::io_context io_context(4);
 
     auto octets =
@@ -122,7 +175,7 @@ int main(int ac, char *av[]) {
     tcp::acceptor acceptor(io_context, endpoint);
 
     // Запуск сервера
-    co_spawn(io_context, start_server(acceptor), detached);
+    co_spawn(io_context, server.start(acceptor), detached);
 
     // Запуск io_context
     io_context.run();
