@@ -5,5 +5,6 @@ target_link_libraries(Coroutines PRIVATE
     Boost::asio
     Boost::log
     Boost::program_options
+    Boost::thread
     Boost::system
 )
