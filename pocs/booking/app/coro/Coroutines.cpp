@@ -6,12 +6,13 @@
 #include <boost/asio/post.hpp>
 #include <boost/asio/thread_pool.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/program_options.hpp>
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <ranges>
-#include <sstream>
+#include <regex>
 #include <stdexcept>
 #include <string>
 
@@ -148,26 +149,32 @@ int main(int ac, char *av[]) {
     std::cout << "Свободных мест: " << capacity << std::endl;
     std::cout << "Путь к базе данных: " << dbPath << std::endl;
 
+    const std::regex ipRegex(R"(^\d{1,3}(\.\d{1,3}){3}$)");
+    if (not std::regex_match(addressArg, ipRegex)) {
+      throw std::invalid_argument("Кривой IP, проверь ещё раз");
+    }
+
     Server server(dbPath, capacity, delay);
     boost::asio::io_context io_context(4);
-
-    auto octets =
-        rng::to<std::vector<std::string>>(addressArg | view::split('.'));
+    // TODO: проверить addressArg через regex
+    using std::operator""sv;
     auto bytesRange =
-        octets | view::transform([](auto &&octet) -> std::uint8_t {
-          std::uint8_t val = 0;
-          std::istringstream iss(octet);
-          iss >> val;
+        view::split(addressArg, "."sv) |
+        view::transform([](auto &&octetRange) -> std::uint8_t {
+          auto val = boost::lexical_cast<std::uint32_t>(
+              std::string(octetRange.cbegin(), octetRange.cend()));
+          if (val > 255) {
+            throw std::invalid_argument(
+                "Числа внутри IP должны быть от 0 до 255 (включительно)");
+          }
           return val;
         });
-    if (octets.size() != 4) {
-      throw std::invalid_argument("bad ip address");
-    }
-    std::array<uint8_t, 4> bytes;
-    rng::for_each(bytesRange | view::enumerate, [&bytes](auto &&kv) {
-      auto &&[idx, val] = kv;
-      bytes.at(idx) = val;
-    });
+    std::array<uint8_t, 4> bytes{0};
+    rng::for_each(bytesRange | view::take(4) | view::enumerate,
+                  [&bytes](auto &&kv) {
+                    auto &&[idx, val] = kv;
+                    bytes.at(idx) = val;
+                  });
     boost::asio::ip::address_v4 address(bytes);
 
     // Создание акцептора для прослушивания порта
@@ -180,7 +187,7 @@ int main(int ac, char *av[]) {
     // Запуск io_context
     io_context.run();
   } catch (std::exception &e) {
-    std::printf("Произошла ошибка: %s\n", e.what());
+    std::printf("Проблема: %s\n", e.what());
   }
 
   return 0;

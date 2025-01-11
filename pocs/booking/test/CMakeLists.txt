@@ -26,10 +26,10 @@ target_link_libraries(UnitTests PRIVATE
 # Add test
 add_test(NAME UnitTests COMMAND UnitTests)
 
-# Optionally, add a custom target to run all tests
-add_custom_target(all_tests ALL DEPENDS UnitTests)
-add_custom_command(
-  TARGET all_tests
-  POST_BUILD
-  COMMAND ctest ARGS --output-on-failure
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+# # Optionally, add a custom target to run all tests
+# add_custom_target(all_tests ALL DEPENDS UnitTests)
+# add_custom_command(
+#   TARGET all_tests
+#   POST_BUILD
+#   COMMAND ctest ARGS --output-on-failure
+#   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
