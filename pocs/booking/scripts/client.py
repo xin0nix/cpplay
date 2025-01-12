@@ -83,12 +83,15 @@ def main():
         default=".temp",
         help="Папка, в которую клиент запишет статистику",
     )
+    parser.add_argument(
+        "--diversity", type=int, default=4, help="Количество разных клиентов."
+    )
     args = parser.parse_args()
     # Оставляю для отладки
     # spawn_client(Client(args.host, args.port, args.out_dir))
     workers = [
         Process(target=spawn_client, args=(Client(args.host, args.port, args.out_dir),))
-        for _ in range(4)
+        for _ in range(args.diversity)
     ]
     for w in workers:
         w.start()

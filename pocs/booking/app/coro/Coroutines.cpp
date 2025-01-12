@@ -1,6 +1,8 @@
 #include "Exchange.hpp"
 #include "Exchange.pb.h"
 #include "Storage.hpp"
+#include "boost/asio/steady_timer.hpp"
+#include "boost/asio/this_coro.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -90,9 +92,11 @@ struct Server {
         auto ok = new exchange::Success{};
         ok->set_ticket_num(ticket.value());
         resp.set_allocated_ok(ok);
-        // TODO: delay через co_await (steady timer)
         if (delay_.count()) {
-          std::this_thread::sleep_for(delay_);
+          auto executor = co_await boost::asio::this_coro::executor;
+          boost::asio::steady_timer timer(executor);
+          timer.expires_after(delay_);
+          co_await timer.async_wait(use_awaitable);
         }
       } else {
         resp.set_allocated_done(new exchange::Done{});

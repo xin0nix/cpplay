@@ -18,6 +18,22 @@
       "generator": "Ninja"
     },
     {
+      "name": "gcc-14-release",
+      "displayName": "GCC 14 Release",
+      "description": "Release build with GCC 14 and compile commands",
+      "binaryDir": "${sourceDir}/build-gcc-14-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "gcc-14",
+        "CMAKE_CXX_COMPILER": "g++-14"
+      },
+      "environment": {
+        "CXXFLAGS": "-Wall -Wpedantic"
+      },
+      "generator": "Ninja"
+    },
+    {
       "name": "clang-debug",
       "displayName": "Clang Debug",
       "description": "Debug build with compile commands",
