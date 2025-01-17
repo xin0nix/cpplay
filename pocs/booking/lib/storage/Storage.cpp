@@ -30,7 +30,6 @@ bool TicketStorage::serialize() {
   }
 
   if (std::ofstream outFile(filePath_); outFile.is_open()) {
-    outFile << "Ticket,Client\n";
     for (auto const [idx, uuid] : std::ranges::enumerate_view(tickets_)) {
       outFile << indexToPlaceNum(idx) << ',' << uuid << '\n';
     }

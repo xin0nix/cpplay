@@ -44,3 +44,38 @@ sudo apt update
 sudo apt install g++-14
 sudo apt install gcc-14
 ```
+
+## Как запустить
+
+Чтобы выбрать подход нужно указать его название с помощью `--backend`. На выбор "tpool" и "coro".
+Проверять естественно нужно в релизной сборке.
+Решение один тред на одно подключение:
+```sh
+App --port 8080 --address 127.0.0.1 --max-backlog 10 --db-path $PWD/.temp/db.csv --capacity 5000 --delay 50 --threads 2 --backend tpool
+```
+Решение через корутины (в несколько раз быстрее):
+```sh
+App --port 8080 --address 127.0.0.1 --max-backlog 10 --db-path $PWD/.temp/db.csv --capacity 5000 --delay 50 --threads 2 --backend coro
+```
+В соседнем терминале нужно запустить питона (в примере ниже 10 процессов):
+```
+cd scripts
+ptyhon3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+time python client.py --diversity 10 --out-dir=$PWD/../.temp/
+```
+
+В моем эксперименте на локальной машине в приере с параметрами выше получилось большое преимущество у корутин:
+```sh
+real    0m25.499s
+user    0m0.640s
+sys     0m0.635s
+```
+Вместо:
+```sh
+real    2m5.797s
+user    0m0.723s
+sys     0m0.935s
+```
+У подхода с отдельным потоком на клиента. То есть корутины отработали в 5 раз быстрее.

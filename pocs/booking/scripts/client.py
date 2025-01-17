@@ -23,27 +23,26 @@ class Client:
         file_path = os.path.join(log_dir, f"{self.id}_history.csv")
         with open(file_path, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["Ticket", "Latency"])
-            for key, value in self.history.items():
-                writer.writerow([key, value])
+            for ticket, latency in self.history.items():
+                writer.writerow([ticket, latency])
 
     # Возвращает True если это был последний запрос ("Done")
     def make_request(self) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             start = time.time_ns()
             s.connect((self.host, self.port))
-            print(f"Connected to {self.host}:{self.port}")
+            # print(f"Connected to {self.host}:{self.port}")
 
             req = Exchange_pb2.Request()
             req.uuid = self.id
 
-            print("Sending request: ", req)
+            # print("Sending request: ", req)
             s.sendall(req.SerializeToString())
 
             resp = s.recv(4096)
             response = Exchange_pb2.Response()
             response.ParseFromString(resp)
-            print(response)
+            print("Билет {t}".format(t=response.ok.ticket_num))
             if response.HasField("done"):
                 print("Мест не осталось")
                 return True

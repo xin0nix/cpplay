@@ -1,5 +1,6 @@
-add_executable(Coroutines Coroutines.cpp)
-target_link_libraries(Coroutines PRIVATE 
+add_library(CoroutineServer OBJECT CoroutineServer.cpp)
+target_link_libraries(CoroutineServer PUBLIC
+    Base
     Exchange
     Storage
     Boost::asio
@@ -8,3 +9,4 @@ target_link_libraries(Coroutines PRIVATE
     Boost::thread
     Boost::system
 )
+target_include_directories(CoroutineServer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
