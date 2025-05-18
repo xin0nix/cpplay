@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+
 #include <iostream>
 #include <sstream>
+#include <stack>
 #include <string>
 
 // Структура узла дерева с сырыми указателями
@@ -24,31 +26,32 @@ void printTree(const TreeNode *node, std::ostream &os, std::string prefix = "",
 }
 
 // Класс решения с поиском k-го наименьшего элемента
-class Solution {
-public:
+struct Solution {
   int kthSmallest(TreeNode *root, int k) {
-    counter = k;
-    result = -1; // Значение по умолчанию, если k превышает количество узлов
-    inorder(root);
-    return result;
-  }
-
-private:
-  int counter;
-  int result;
-
-  void inorder(TreeNode *node) {
-    if (!node)
-      return;
-
-    inorder(node->left);
-
-    if (--counter == 0) {
-      result = node->val;
-      return;
+    std::stack<TreeNode *> stack;
+    if (root == nullptr) {
+      return -1;
     }
+    int counter = k;
+    int result = -1; // Значение по умолчанию, если k превышает количество узлов
+    stack.push(root);
+    auto *cur = root;
+    while (not stack.empty()) {
+      // Проваливаемся до последнего левого потомка
+      while (cur != nullptr) {
+        stack.push(cur);
+        cur = cur->left;
+      }
+      cur = stack.top();
+      stack.pop();
+      // Посещаем верхний узел
+      if (--counter == 0) {
+        return cur->val;
+      }
 
-    inorder(node->right);
+      cur = cur->right;
+    }
+    return -1;
   }
 };
 
