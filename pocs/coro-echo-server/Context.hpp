@@ -10,11 +10,10 @@
 
 namespace cpplay {
 struct ThreadPool {
-  ThreadPool(size_t numThreads = 4);
+  ThreadPool(size_t numThreads = 4, std::string alias = "WorkerPool");
   ~ThreadPool();
 
   void enqueue(std::function<void()> task);
-  void stop();
 
 private:
   void workerLoop();
@@ -24,6 +23,8 @@ private:
   std::mutex mMutex;
   std::condition_variable mCv;
   std::atomic<bool> mStopFlag{false};
+
+  std::string mAlias;
 };
 
 struct EventLoop {
