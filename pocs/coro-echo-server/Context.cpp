@@ -1,6 +1,4 @@
-#include "ThreadPool.hpp"
-#include <mutex>
-#include <stdexcept>
+#include "Context.hpp"
 
 namespace cpplay {
 ThreadPool::ThreadPool(size_t numThreads) {
@@ -42,5 +40,28 @@ void ThreadPool::workerLoop() {
     }
     task();
   }
+}
+
+EventLoop::EventLoop() { run(); }
+
+EventLoop::~EventLoop() { stop(); }
+
+void EventLoop::run() {
+  if (!mPool) { // prevent restarting if already running
+    mPool = std::make_unique<ThreadPool>(1);
+  }
+}
+
+void EventLoop::stop() {
+  if (mPool) {
+    mPool.reset();
+  }
+}
+
+void EventLoop::postTask(std::function<void()> task) {
+  if (!mPool) {
+    throw std::runtime_error("EventLoop is not running");
+  }
+  mPool->enqueue(std::move(task));
 }
 } // namespace cpplay

@@ -9,9 +9,10 @@ namespace cpplay {
 
 struct IpAddress;
 
+enum class TcpSocketError { ACCEPT_FAILED, POLL_FAILED, RECV_FAILED };
+
 struct TcpSocket {
   struct Exception;
-  enum class TcpSocketError { ACCEPT_FAILED, POLL_FAILED, RECV_FAILED };
   TcpSocket();
   TcpSocket(int fd);
   ~TcpSocket();
