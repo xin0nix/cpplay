@@ -65,31 +65,10 @@ void ThreadPool::workerLoop() {
 
 EventLoop::EventLoop() : mPool(std::make_unique<ThreadPool>(1, "EventLoop")) {
   std::cerr << "EventLoop: Starting event loop\n";
-  run();
+  //   run();
 }
 
-EventLoop::~EventLoop() {
-  std::cerr << "EventLoop: Stopping event loop\n";
-  stop();
-}
-
-void EventLoop::run() {
-  if (!mPool) { // prevent restarting if already running
-    std::cerr << "EventLoop: Creating ThreadPool\n";
-    mPool = std::make_unique<ThreadPool>(1, "EventLoop");
-  } else {
-    std::cerr << "EventLoop: Already running\n";
-  }
-}
-
-void EventLoop::stop() {
-  if (mPool) {
-    std::cerr << "EventLoop: Resetting thread pool\n";
-    mPool.reset();
-  } else {
-    std::cerr << "EventLoop: Not running, no thread pool to stop\n";
-  }
-}
+EventLoop::~EventLoop() { std::cerr << "EventLoop: Stopping event loop\n"; }
 
 void EventLoop::postTask(std::function<void()> task) {
   if (!mPool) {

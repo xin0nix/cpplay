@@ -31,9 +31,7 @@ struct EventLoop {
   EventLoop();
   ~EventLoop();
 
-  void run();
   void postTask(std::function<void()> task);
-  void stop();
 
 private:
   std::unique_ptr<ThreadPool> mPool;
