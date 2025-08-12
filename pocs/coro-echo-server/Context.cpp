@@ -65,7 +65,6 @@ void ThreadPool::workerLoop() {
 
 EventLoop::EventLoop() : mPool(std::make_unique<ThreadPool>(1, "EventLoop")) {
   std::cerr << "EventLoop: Starting event loop\n";
-  //   run();
 }
 
 EventLoop::~EventLoop() { std::cerr << "EventLoop: Stopping event loop\n"; }

@@ -9,7 +9,12 @@ namespace cpplay {
 
 struct IpAddress;
 
-enum class TcpSocketError { ACCEPT_FAILED, POLL_FAILED, RECV_FAILED };
+enum class TcpSocketError {
+  ACCEPT_FAILED,
+  POLL_FAILED,
+  RECV_FAILED,
+  SEND_FAILED
+};
 
 struct TcpSocket {
   struct Exception;
@@ -22,6 +27,9 @@ struct TcpSocket {
   void
   readSome(std::span<uint8_t> buffer,
            std::function<void(std::expected<size_t, TcpSocketError>)> callback);
+  void writeSome(
+      std::span<uint8_t> buffer,
+      std::function<void(std::expected<size_t, TcpSocketError>)> callback);
   int getDescriptor() const;
 
 private:

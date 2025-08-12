@@ -96,7 +96,7 @@ void TcpSocket::acceptConneciton(
   socklen_t clientAddrLen = sizeof(clientAddr);
   int connFd =
       accept(mSocketFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
-  if (connFd < 0) {
+  if (connFd == -1) {
     std::cerr << "TcpSocket: Accept failed with errno " << errno << " ("
               << strerror(errno) << ")\n";
     callback(std::unexpected(TcpSocketError::ACCEPT_FAILED));
@@ -113,26 +113,42 @@ void TcpSocket::readSome(
   pfd.fd = mSocketFd;
   pfd.events = POLLIN;
   std::cerr << "TcpSocket: Entering readSome loop with 30s timeout\n";
-  while (true) {
-    int pollCount = ::poll(&pfd, 1, 30'000 /*ms*/);
-    if (pollCount < 0) {
-      std::cerr << "TcpSocket: poll failed with errno " << errno << " ("
-                << strerror(errno) << ")\n";
-      callback(std::unexpected(TcpSocketError::POLL_FAILED));
-      return;
-    }
-    if (pfd.revents & POLLIN) {
-      ssize_t n = ::recv(mSocketFd, buffer.data(), buffer.size(), 0);
-      if (n > 0) {
-        std::cerr << "TcpSocket: Received " << n << " bytes\n";
-        callback(n);
-        return;
-      }
+  int pollCount = ::poll(&pfd, 1, 30'000 /*ms*/);
+  if (pollCount == -1) {
+    std::cerr << "TcpSocket: poll failed with errno " << errno << " ("
+              << strerror(errno) << ")\n";
+    callback(std::unexpected(TcpSocketError::POLL_FAILED));
+    return;
+  }
+  if (pfd.revents & POLLIN) {
+    ssize_t n = ::recv(mSocketFd, buffer.data(), buffer.size(), 0);
+    if (n > 0) {
+      std::cerr << "TcpSocket: Received " << n << " bytes\n";
+      callback(n);
+    } else {
       std::cerr << "TcpSocket: recv failed or connection closed with errno "
                 << errno << " (" << strerror(errno) << ")\n";
       callback(std::unexpected(TcpSocketError::RECV_FAILED));
-      return;
     }
+  } else {
+    std::cerr << "TcpSocket: poll unrelated event " << pfd.revents << std::endl;
+    callback(std::unexpected(TcpSocketError::POLL_FAILED));
+    return;
+  }
+}
+
+void TcpSocket::writeSome(
+    std::span<uint8_t> buffer,
+    std::function<void(std::expected<size_t, TcpSocketError>)> callback) {
+
+  ssize_t n = ::send(mSocketFd, buffer.data(), buffer.size(), 0);
+  if (n > 0) {
+    std::cerr << "TcpSocket: Sent " << n << " bytes\n";
+    callback(n);
+  } else {
+    std::cerr << "TcpSocket: send failed or connection closed with errno "
+              << errno << " (" << strerror(errno) << ")\n";
+    callback(std::unexpected(TcpSocketError::SEND_FAILED));
   }
 }
 

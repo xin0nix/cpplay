@@ -1,8 +1,8 @@
-#include <chrono>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <experimental/scope>
 #include <future>
 #include <iostream>
 #include <memory>
@@ -15,42 +15,52 @@ using namespace std::chrono_literals;
 
 namespace cpplay {
 struct Server {
-
   cpplay::CoroTask echo(std::shared_ptr<cpplay::Context> context,
                         std::shared_ptr<cpplay::TcpSocket> socket, int times) {
+    auto guard = std::experimental::scope_exit{[this] {
+      std::cerr << "Setting echo promise\n";
+      mEchoPromise.set_value();
+    }};
     for (int i = 0; i < times; ++i) {
       auto connected =
           co_await cpplay::AvaitableTcpSocketAcceptor(context, socket);
-      std::vector<uint8_t> buffer(128, 0);
       if (!connected.has_value()) {
         std::cerr << "Failed to accept connection\n";
         co_return;
       }
-      auto bytesRead = co_await cpplay::AvaitableTcpSocketReader(
-          context, connected.value(), buffer);
-      if (!bytesRead.has_value()) {
+      auto connection = std::move(connected).value();
+      std::vector<uint8_t> buffer(4096, 0);
+      auto readRes = co_await cpplay::AvaitableTcpSocketReader(
+          context, connection, buffer);
+      if (!readRes.has_value()) {
         std::cerr << "Failed to read any bytes\n";
         co_return;
       }
-      std::cout << "Bytes read: " << bytesRead.value() << std::endl;
-      std::unique_lock lock(mMutex);
+      auto received = readRes.value();
+      std::cout << "Bytes read: " << received << std::endl;
+      std::span sendBuff(buffer.begin(), buffer.begin() + received);
+      auto bytesSent = co_await cpplay::AvaitableTcpSocketWriter(
+          context, connection, sendBuff);
+      if (!bytesSent.has_value()) {
+        std::cerr << "Failed to send any bytes\n";
+        co_return;
+      }
+      auto sent = bytesSent.value();
+      if (sent != received) {
+        std::cerr << "Mismatch, exiting, sent=" << sent
+                  << ", received=" << received << std::endl;
+        co_return;
+      }
     }
-    mFinished.set_value();
   }
 
   void wait() {
-    std::future<void> f;
-    {
-      std::cerr << "Waiting for the coroutine to finish\n";
-      std::unique_lock lock(mMutex);
-      f = mFinished.get_future();
-    }
-    f.wait();
+    std::cerr << "Waiting for the echo to finish\n";
+    mEchoPromise.get_future().wait();
   }
 
 private:
-  std::mutex mMutex;
-  std::promise<void> mFinished;
+  std::promise<void> mEchoPromise;
 };
 } // namespace cpplay
 

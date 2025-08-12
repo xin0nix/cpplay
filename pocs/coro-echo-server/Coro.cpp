@@ -51,7 +51,7 @@ void AvaitableTcpSocketAcceptor::await_suspend(
       if (socketFd.has_value()) {
         std::cerr
             << "AvaitableTcpSocketAcceptor: Connection accepted, socketFd: "
-            << socketFd.value() << "\n";
+            << int(socketFd.value()) << "\n";
         this->mConnectedSocket = std::make_shared<TcpSocket>(socketFd.value());
       } else {
         std::cerr << "AvaitableTcpSocketAcceptor: Connection accept failed\n";
@@ -94,27 +94,78 @@ void AvaitableTcpSocketReader::await_suspend(
     std::coroutine_handle<CoroPromise> handle) noexcept {
   std::cerr
       << "AvaitableTcpSocketReader: await_suspend called, starting read\n";
-  mTcpSocket->readSome(
-      mBuffer, [this, handle](std::expected<size_t, TcpSocketError> bytesRead) {
-        if (bytesRead.has_value()) {
-          std::cerr << "AvaitableTcpSocketReader: Bytes read: "
-                    << bytesRead.value() << "\n";
-        } else {
-          std::cerr << "AvaitableTcpSocketReader: Read failed\n";
-        }
-        this->mBytesRead = bytesRead;
-        std::cerr
-            << "AvaitableTcpSocketReader: Posting resume task to event loop\n";
-        this->mContext->mLoop.postTask([handle]() {
-          std::cerr << "AvaitableTcpSocketReader: Resuming coroutine\n";
-          handle.resume();
-        });
+  mContext->mPool.enqueue([this, handle]() {
+    mTcpSocket->readSome(mBuffer, [this,
+                                   handle](std::expected<size_t, TcpSocketError>
+                                               bytesRead) {
+      if (bytesRead.has_value()) {
+        std::cerr << "AvaitableTcpSocketReader: Bytes read: "
+                  << bytesRead.value() << "\n";
+      } else {
+        std::cerr << "AvaitableTcpSocketReader: Read failed\n";
+      }
+      this->mBytesRead = bytesRead;
+      std::cerr
+          << "AvaitableTcpSocketReader: Posting resume task to event loop\n";
+      this->mContext->mLoop.postTask([handle]() {
+        std::cerr << "AvaitableTcpSocketReader: Resuming coroutine\n";
+        handle.resume();
       });
+    });
+  });
 }
 
 std::expected<size_t, TcpSocketError>
 AvaitableTcpSocketReader::await_resume() const noexcept {
   std::cerr << "AvaitableTcpSocketReader: await_resume called\n";
+  return mBytesRead;
+}
+
+//-----------------------------------------------------------------------------
+// Socket Writer
+
+AvaitableTcpSocketWriter::AvaitableTcpSocketWriter(
+    std::shared_ptr<Context> context, std::shared_ptr<TcpSocket> socket,
+    std::span<uint8_t> buffer)
+    : mContext(std::move(context)), mTcpSocket(std::move(socket)),
+      mBuffer(buffer) {
+  std::cerr << "AvaitableTcpSocketWriter: Constructor called\n";
+}
+
+bool AvaitableTcpSocketWriter::await_ready() const noexcept {
+  std::cerr
+      << "AvaitableTcpSocketWriter: await_ready called, returning false\n";
+  return false;
+}
+
+void AvaitableTcpSocketWriter::await_suspend(
+    std::coroutine_handle<CoroPromise> handle) noexcept {
+  std::cerr
+      << "AvaitableTcpSocketWriter: await_suspend called, start sending\n";
+  mContext->mPool.enqueue([this, handle]() {
+    mTcpSocket->writeSome(mBuffer, [this, handle](
+                                       std::expected<size_t, TcpSocketError>
+                                           bytesWrote) {
+      if (bytesWrote.has_value()) {
+        std::cerr << "AvaitableTcpSocketWriter: Bytes wrote: "
+                  << bytesWrote.value() << "\n";
+      } else {
+        std::cerr << "AvaitableTcpSocketWriter: Write failed\n";
+      }
+      this->mBytesRead = bytesWrote;
+      std::cerr
+          << "AvaitableTcpSocketWriter: Posting resume task to event loop\n";
+      this->mContext->mLoop.postTask([handle]() {
+        std::cerr << "AvaitableTcpSocketWriter: Resuming coroutine\n";
+        handle.resume();
+      });
+    });
+  });
+}
+
+std::expected<size_t, TcpSocketError>
+AvaitableTcpSocketWriter::await_resume() const noexcept {
+  std::cerr << "AvaitableTcpSocketWriter: await_resume called\n";
   return mBytesRead;
 }
 
