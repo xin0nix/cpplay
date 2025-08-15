@@ -15,6 +15,7 @@ struct ThreadPool final {
   ~ThreadPool();
 
   void enqueue(Task task);
+  void drain();
 
 private:
   void workerLoop();
@@ -24,5 +25,6 @@ private:
   std::condition_variable mCv;
   std::queue<Task> mTasks;
   std::vector<std::thread> mThreads;
+  std::atomic<size_t> mRunningTasks;
 };
 } // namespace cpplay

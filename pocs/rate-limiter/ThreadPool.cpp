@@ -24,6 +24,12 @@ ThreadPool::~ThreadPool() {
   std::cerr << "ThreadPool: All threads stopped.\n";
 }
 
+void ThreadPool::drain() {
+  std::unique_lock lock(mMutex);
+  mCv.wait(lock, [this]() { return mTasks.empty() && (mRunningTasks == 0); });
+  std::cerr << "ThreadPool: drain() complete. All tasks finished.\n";
+}
+
 void ThreadPool::workerLoop() {
   while (true) {
     Task task;
@@ -36,6 +42,7 @@ void ThreadPool::workerLoop() {
       }
       task = std::move(mTasks.front());
       mTasks.pop();
+      ++mRunningTasks;
     }
     try {
       task();
@@ -44,6 +51,8 @@ void ThreadPool::workerLoop() {
     } catch (...) {
       std::cerr << "Task failed with unknown exception.\n";
     }
+    --mRunningTasks;
+    mCv.notify_all();
   }
 }
 
@@ -58,6 +67,6 @@ void ThreadPool::enqueue(Task task) {
     std::cerr << "ThreadPool: Task enqueued. Queue size is now "
               << mTasks.size() << ".\n";
   }
-  mCv.notify_one();
+  mCv.notify_all();
 }
 } // namespace cpplay
