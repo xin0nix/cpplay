@@ -104,6 +104,22 @@ int TcpSocket::acceptConneciton() {
   return connFd;
 }
 
+void TcpSocket::connectTo(const IpAddress &ipAddress) {
+  struct sockaddr_in serverAddress;
+  serverAddress.sin_family = AF_INET;
+  auto [addr, port] = ipAddress.getFullHostAddress();
+  std::cerr << "TcpSocket: Connecting to " << addr << ":" << port << std::endl;
+  serverAddress.sin_port = htons(port);
+  serverAddress.sin_addr.s_addr = inet_addr(addr.c_str());
+
+  if (::connect(mSocketFd, (struct sockaddr *)&serverAddress,
+                sizeof(serverAddress)) == -1) {
+    std::cerr << "TcpSocket: Connect failed with errno " << errno << " ("
+              << strerror(errno) << ")\n";
+    throw Exception(errno);
+  }
+}
+
 size_t TcpSocket::readSome(std::span<uint8_t> buffer) {
   struct pollfd pfd;
   pfd.fd = mSocketFd;

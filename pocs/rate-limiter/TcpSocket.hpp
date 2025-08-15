@@ -35,6 +35,7 @@ struct TcpSocket final {
   ~TcpSocket();
   void bindTo(const IpAddress &ipAddress);
   int acceptConneciton();
+  void connectTo(const IpAddress &ipAddress);
   size_t readSome(std::span<uint8_t> buffer);
   size_t writeSome(std::span<uint8_t> buffer);
   int getDescriptor() const;
