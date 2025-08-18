@@ -4,28 +4,43 @@
 
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cstdint>
 #include <iostream>
 #include <thread>
 
 using namespace std::chrono_literals;
 
+namespace {
+std::atomic<bool> gTerminate(false);
+
+void signalHandler(int sig) {
+  gTerminate.store(true, std::memory_order_release);
+  ::signal(sig, SIG_DFL);
+}
+} // namespace
+
 namespace cpplay {
 struct RateLimiter {
   RateLimiter(IpAddress hostAddress, IpAddress apiAddress)
-      : mHostAddress(hostAddress), mApiAddress(apiAddress),
-        mTokenThread(&RateLimiter::tokenSupplier, this) {}
+      : mHostAddress(hostAddress), mApiAddress(apiAddress) {}
 
   ~RateLimiter() {
-    if (mTokenThread.joinable()) {
-      mTokenThread.join();
+    if (mTokenThread && mTokenThread->joinable()) {
+      mTokenThread->join();
     }
+  }
+
+  void start() {
+    mTokenThread =
+        std::make_unique<std::thread>(&RateLimiter::tokenSupplier, this);
+    mWorkerPool.start(4);
   }
 
   void tokenSupplier() {
     auto lastRefill = std::chrono::steady_clock::now();
-    const int64_t maxTokens = 5;    // Burst capacity
-    const auto refillInterval = 2s; // Add 1 token every 2 seconds
+    const int64_t maxTokens = 10;     // Burst capacity
+    const auto refillInterval = 0.1s; // Add 1 token every 0.1 seconds
 
     while (!mStopFlag.load(std::memory_order_acquire)) {
       auto now = std::chrono::steady_clock::now();
@@ -63,11 +78,11 @@ struct RateLimiter {
     return true;
   }
 
-  void run() {
+  void run(std::function<bool()> predicate) {
     // FIXME: infinite loop or something
     TcpSocket acceptor;
     acceptor.bindTo(mHostAddress);
-    for (int i = 0; i < 10; ++i) {
+    while (predicate()) {
       // Accept a connection
       try {
         auto connectionFd = acceptor.acceptConneciton();
@@ -90,20 +105,23 @@ struct RateLimiter {
         std::cerr << e.what() << std::endl;
       }
     }
-    mWorkerPool.drain();
     mStopFlag.store(true, std::memory_order_release);
+    mWorkerPool.drain();
   }
 
   IpAddress mHostAddress;
   IpAddress mApiAddress;
-  ThreadPool mWorkerPool{4};
-  std::thread mTokenThread;
+  ThreadPool mWorkerPool;
+  std::unique_ptr<std::thread> mTokenThread;
   std::atomic<int64_t> mTokenBucket{0};
   std::atomic<bool> mStopFlag{false};
 };
 } // namespace cpplay
 
 int main() {
+  std::signal(SIGINT, signalHandler);  // Ctrl-C
+  std::signal(SIGTERM, signalHandler); // kill command
   cpplay::RateLimiter limiter{{{127, 0, 0, 1}, 4321}, {{127, 0, 0, 1}, 8081}};
-  limiter.run();
+  limiter.start();
+  limiter.run([]() { return !gTerminate; });
 }

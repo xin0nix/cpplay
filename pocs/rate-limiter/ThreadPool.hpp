@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -11,9 +12,10 @@ using Task = std::function<void(void)>;
 
 struct ThreadPool final {
 
-  ThreadPool(size_t numThreads);
+  ThreadPool() = default;
   ~ThreadPool();
 
+  void start(size_t numThreads);
   void enqueue(Task task);
   void drain();
 

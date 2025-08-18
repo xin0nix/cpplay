@@ -2,7 +2,7 @@
 #include <iostream>
 
 namespace cpplay {
-ThreadPool::ThreadPool(size_t numThreads) {
+void ThreadPool::start(size_t numThreads) {
   std::cerr << "ThreadPool: Starting with " << numThreads << " threads.\n";
   for (size_t i = 0UL; i < numThreads; ++i) {
     mThreads.emplace_back(&ThreadPool::workerLoop, this);
