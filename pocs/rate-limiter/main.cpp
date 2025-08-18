@@ -3,6 +3,7 @@
 #include "ThreadPool.hpp"
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <thread>
@@ -22,10 +23,44 @@ struct RateLimiter {
   }
 
   void tokenSupplier() {
+    auto lastRefill = std::chrono::steady_clock::now();
+    const int64_t maxTokens = 5;    // Burst capacity
+    const auto refillInterval = 2s; // Add 1 token every 2 seconds
+
     while (!mStopFlag.load(std::memory_order_acquire)) {
-      std::this_thread::sleep_for(10s);
-      mTokenBucket.store(1, std::memory_order_release);
+      auto now = std::chrono::steady_clock::now();
+      auto elapsed = now - lastRefill;
+      int64_t tokensToAdd = elapsed / refillInterval;
+      if (tokensToAdd > 0) {
+        int64_t newTokens{0};
+        auto current = mTokenBucket.load(std::memory_order_acquire);
+        do {
+          newTokens = std::min(current + tokensToAdd, maxTokens);
+          // NOTE: compare_exchange_strong updates current, not need to reload
+        } while (!mTokenBucket.compare_exchange_weak(
+            current, newTokens,
+            std::memory_order_acq_rel, // success ordering
+            std::memory_order_acquire  // failure ordering
+            ));
+        lastRefill = now;
+      }
+      std::this_thread::sleep_for(100ms);
     }
+  }
+
+  bool tryGetToken() {
+    int64_t current;
+    do {
+      current = mTokenBucket.load(std::memory_order_acquire);
+      if (current <= 0) {
+        return false;
+      }
+    } while (!mTokenBucket.compare_exchange_weak(
+        current, current - 1,
+        std::memory_order_acq_rel, // success ordering
+        std::memory_order_acquire  // failure ordering
+        ));
+    return true;
   }
 
   void run() {
@@ -38,8 +73,7 @@ struct RateLimiter {
         auto connectionFd = acceptor.acceptConneciton();
         mWorkerPool.enqueue([this, connectionFd]() {
           TcpSocket client{connectionFd};
-          auto token = --mTokenBucket;
-          if (token < 0) {
+          if (!tryGetToken()) {
             // Reject
             std::vector<uint8_t> bad = {0U};
             client.writeSome(bad);
