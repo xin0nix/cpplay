@@ -1,0 +1,3 @@
+.venv
+*.pyc
+compile_commands.json
