@@ -10,5 +10,5 @@ TEST_NAME=test_${DIR_NAME}.cpp
 echo $DIR_NAME
 echo $TEST_NAME
 
-mkdir $DIR_NAME
-touch $DIR_NAME/$TEST_NAME
+mkdir problems/$DIR_NAME
+touch problems/$DIR_NAME/$TEST_NAME
