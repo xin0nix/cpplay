@@ -5,33 +5,21 @@
 #include <vector>
 
 struct DirReduction {
-  static bool opposite(char dirA, char dirB) {
-    // N <-> S
-    // W <-> E
-    return (dirA == 'N' and dirB == 'S') or (dirA == 'S' and dirB == 'N') or
-           (dirA == 'W' and dirB == 'E') or (dirA == 'E' and dirB == 'W');
+  static bool opposite(const std::string &dirA, const std::string &dirB) {
+    return (dirA == "NORTH" && dirB == "SOUTH") ||
+           (dirA == "SOUTH" && dirB == "NORTH") ||
+           (dirA == "EAST" && dirB == "WEST") ||
+           (dirA == "WEST" && dirB == "EAST");
   }
 
   static std::vector<std::string>
   dirReduc(const std::vector<std::string> &arr) {
-    auto res = arr;
-    bool changed = true;
-    auto prev = arr.end();
-    while (changed) {
-      changed = false;
-      auto cur = res.begin();
-      for (auto end = res.end(); cur != end; ++cur) {
-        if (prev == arr.end()) {
-          prev = cur;
-          continue;
-        }
-        if (opposite(prev->front(), cur->front())) {
-          changed = true;
-          break;
-        }
-      }
-      if (changed) {
-        res.erase(prev, cur + 1);
+    std::vector<std::string> res;
+    for (const auto &dir : arr) {
+      if (!res.empty() && opposite(res.back(), dir)) {
+        res.pop_back();
+      } else {
+        res.push_back(dir);
       }
     }
     return res;
@@ -39,17 +27,6 @@ struct DirReduction {
 };
 
 TEST(dirReduc_Tests, Examples) {
-  {
-    SCOPED_TRACE("Helper");
-    EXPECT_TRUE(DirReduction::opposite('N', 'S'));
-    EXPECT_TRUE(DirReduction::opposite('S', 'N'));
-    EXPECT_TRUE(DirReduction::opposite('E', 'W'));
-    EXPECT_TRUE(DirReduction::opposite('W', 'E'));
-    EXPECT_FALSE(DirReduction::opposite('N', 'N'));
-    EXPECT_FALSE(DirReduction::opposite('N', 'E'));
-    EXPECT_FALSE(DirReduction::opposite('S', 'E'));
-    EXPECT_FALSE(DirReduction::opposite('S', 'W'));
-  }
   {
     SCOPED_TRACE("Case1");
     std::vector<std::string> data = {"NORTH", "SOUTH", "SOUTH", "EAST",
