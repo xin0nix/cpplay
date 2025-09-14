@@ -1,5 +1,6 @@
 const std = @import("std");
-const root = @import("./common.zig");
+const common = @import("./common.zig");
+const vm = @import("./vm.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -14,12 +15,13 @@ pub fn main() !void {
     }
     var allocator = gpa.allocator();
 
-    var input_buffer = try root.InputBuffer.init(&allocator, 1024);
+    var input_buffer = try common.InputBuffer.init(&allocator, 1024);
     defer input_buffer.deinit();
 
     var running: bool = true;
     const stdin = std.fs.File.stdin();
-    const exit = ".exit";
+    var parser = common.Parser{};
+    var executor = vm.Executor{};
     while (running) {
         std.debug.print(">", .{});
         input_buffer.consume(stdin) catch |err| {
@@ -30,10 +32,25 @@ pub fn main() !void {
             running = false;
             return;
         };
-        std.debug.print("Compare {} {}\n", .{ exit.len, input_buffer.input_view.len });
-        if (std.mem.eql(u8, input_buffer.input_view, exit)) {
-            std.debug.print("bye...\n", .{});
-            return;
+
+        const command = parser.identify(&input_buffer) catch |err| {
+            std.debug.print("Failed to parse {s}: ", .{input_buffer.input_view});
+            switch (err) {
+                error.invalid_token => {
+                    std.debug.print("starts from invalid command\n", .{});
+                },
+            }
+            continue;
+        };
+
+        switch (command) {
+            .exit => {
+                std.debug.print("bye...\n", .{});
+                return;
+            },
+            .statement => |s| {
+                executor.evaluate(s);
+            },
         }
     }
 }

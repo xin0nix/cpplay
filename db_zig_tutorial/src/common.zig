@@ -1,6 +1,62 @@
 //! By convention, root.zig is the root source file when making a library.
 const std = @import("std");
 
+const InputError = error{
+    invalid_token,
+};
+
+pub const Statement = enum {
+    select,
+    insert,
+};
+
+pub const Command = union(enum) {
+    exit: void,
+    statement: Statement,
+
+    pub fn equals(self: Command, other: Command) bool {
+        switch (self) {
+            .exit => {
+                switch (other) {
+                    .exit => return true,
+                    .statement => return false,
+                }
+            },
+            .statement => {
+                switch (other) {
+                    .exit => return false,
+                    .statement => return self.statement == other.statement,
+                }
+            },
+        }
+    }
+};
+
+pub const Parser = struct {
+    pub fn identify(_: *Parser, input_buffer: *InputBuffer) !Command {
+        const view = input_buffer.input_view;
+        if (view.len == 0) {
+            // FIXME: dedicated error
+            return InputError.invalid_token;
+        }
+        if (view.len > 0 and view[0] == '.') {
+            if (std.mem.eql(u8, view, ".exit")) {
+                return Command.exit;
+            }
+            return InputError.invalid_token;
+        }
+        const insert = "insert";
+        if (std.mem.eql(u8, view[0..insert.len], insert)) {
+            return Command{ .statement = Statement.insert };
+        }
+        const select = "select";
+        if (std.mem.eql(u8, view[0..select.len], select)) {
+            return Command{ .statement = Statement.select };
+        }
+        return InputError.invalid_token;
+    }
+};
+
 pub const InputBuffer = struct {
     allocator: *std.mem.Allocator,
     buffer: []u8,
@@ -36,4 +92,17 @@ test "InputBuffer allocates and frees correctly" {
     var debug_allocator = std.testing.allocator;
     var input_buffer = try InputBuffer.init(&debug_allocator, 1024);
     defer input_buffer.deinit();
+}
+
+test "Parser identify test" {
+    var parser = Parser{};
+    var debug_allocator = std.testing.allocator;
+    var input_buffer = try InputBuffer.init(&debug_allocator, 1024);
+    defer input_buffer.deinit();
+
+    input_buffer.input_view = ".exit";
+    try std.testing.expect((try parser.identify(&input_buffer)).equals(Command{ .exit = {} }));
+
+    input_buffer.input_view = "insert into table";
+    try std.testing.expect((try parser.identify(&input_buffer)).equals(Command{ .statement = Statement.insert }));
 }
