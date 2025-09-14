@@ -28,20 +28,20 @@ pub fn build(b: *std.Build) void {
     // to our consumers. We must give it a name because a Zig package can expose
     // multiple modules and consumers will need to be able to specify which
     // module they want to access.
-    const mod = b.addModule("db_zig_tutorial", .{
-        // The root source file is the "entry point" of this module. Users of
+    const mod = b.addModule("common", .{
+        // The common source file is the "entry point" of this module. Users of
         // this module will only be able to access public declarations contained
         // in this file, which means that if you have declarations that you
         // intend to expose to consumers that were defined in other files part
         // of this module, you will have to make sure to re-export them from
-        // the root file.
-        .root_source_file = b.path("src/root.zig"),
-        // Later on we'll use this module as the root module of a test executable
+        // the common file.
+        .root_source_file = b.path("src/common.zig"),
+        // Later on we'll use this module as the common module of a test executable
         // which requires us to specify a target.
         .target = target,
     });
 
-    // Here we define an executable. An executable needs to have a root module
+    // Here we define an executable. An executable needs to have a common module
     // which needs to expose a `main` function. While we could add a main function
     // to the module defined above, it's sometimes preferable to split business
     // business logic and the CLI into two separate modules.
@@ -65,20 +65,20 @@ pub fn build(b: *std.Build) void {
             // this package, which is why in this case we don't have to give it a name.
             .root_source_file = b.path("src/main.zig"),
             // Target and optimization levels must be explicitly wired in when
-            // defining an executable or library (in the root module), and you
+            // defining an executable or library (in the common module), and you
             // can also hardcode a specific target for an executable or library
             // definition if desireable (e.g. firmware for embedded devices).
             .target = target,
             .optimize = optimize,
             // List of modules available for import in source files part of the
-            // root module.
+            // common module.
             .imports = &.{
-                // Here "db_zig_tutorial" is the name you will use in your source code to
-                // import this module (e.g. `@import("db_zig_tutorial")`). The name is
+                // Here "common" is the name you will use in your source code to
+                // import this module (e.g. `@import("common")`). The name is
                 // repeated because you are allowed to rename your imports, which
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
-                .{ .name = "db_zig_tutorial", .module = mod },
+                .{ .name = "common", .module = mod },
             },
         }),
     });
@@ -126,7 +126,7 @@ pub fn build(b: *std.Build) void {
     const run_mod_tests = b.addRunArtifact(mod_tests);
 
     // Creates an executable that will run `test` blocks from the executable's
-    // root module. Note that test executables only test one module at a time,
+    // common module. Note that test executables only test one module at a time,
     // hence why we have to create two separate ones.
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
