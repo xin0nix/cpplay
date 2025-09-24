@@ -21,51 +21,159 @@ pub fn cStringLen(slice: []const u8) usize {
     return slice.len; // No null terminator found in slice range
 }
 
-pub const Table = struct {
+pub const Index = struct {
+    file: std.fs.File,
     num_rows: usize,
+
+    pub fn open(sub_path: []const u8) !Index {
+        const cwd = std.fs.cwd();
+        const file = try cwd.openFile(sub_path, .{
+            .mode = .read_write,
+        });
+        const file_length = (try file.stat()).size;
+        if (file_length == 0) {
+            return Index{
+                .file = file,
+                .num_rows = 0,
+            };
+        } else {
+            var bytes: [@sizeOf(usize)]u8 = undefined;
+            const read = try file.readAll(&bytes);
+            if (read != 8) {
+                return SerializationError.out_of_range;
+            }
+            const num_rows = std.mem.readInt(usize, &bytes, .little);
+            return Index{
+                .file = file,
+                .num_rows = num_rows,
+            };
+        }
+    }
+
+    pub fn flush(self: *Index) !void {
+        var bytes: [@sizeOf(usize)]u8 = undefined;
+        std.mem.writeInt(usize, &bytes, self.num_rows, .little);
+        try self.file.writeAll(&bytes);
+    }
+
+    pub fn close(self: *Index) !void {
+        defer self.file.close();
+        try self.flush();
+    }
+};
+
+pub const Pager = struct {
+    file: std.fs.File,
+    file_length: u64,
     pages: [TABLE_MAX_PAGES]?[]u8,
     allocator: *std.mem.Allocator,
 
-    pub fn new_row_slot(self: *Table) ![]u8 {
-        defer self.num_rows += 1;
-        return self.row_slot(self.num_rows);
-    }
-
-    pub fn row_slot(self: *Table, row_num: usize) ![]u8 {
-        const page_num = row_num / ROWS_PER_PAGE;
-        if (page_num >= TABLE_MAX_PAGES) {
+    pub fn open(sub_path: []const u8, allocator: *std.mem.Allocator) !Pager {
+        const cwd = std.fs.cwd();
+        const file = try cwd.openFile(sub_path, .{
+            .mode = .read_write,
+        });
+        const file_length = (try file.stat()).size;
+        if (file_length % PAGE_SIZE > 0) {
+            std.debug.print("File size does not fit into page size {d}\n", .{file_length});
             return SerializationError.out_of_range;
         }
-        const row_offset = row_num % ROWS_PER_PAGE;
-        const byte_offset = row_offset * @sizeOf(Row);
-        const pageLookup = self.pages[page_num];
-        if (pageLookup) |page| {
-            return page[byte_offset .. byte_offset + @sizeOf(Row)];
-        } else {
-            const page = try self.allocator.alloc(u8, PAGE_SIZE);
-            self.pages[page_num] = page;
-            return page[byte_offset .. byte_offset + @sizeOf(Row)];
-        }
-    }
-
-    pub fn init(allocator: *std.mem.Allocator) Table {
-        var table = Table{
-            .num_rows = 0,
+        var pager = Pager{
+            .file = file,
+            .file_length = file_length,
             .pages = undefined,
             .allocator = allocator,
         };
-        for (&table.pages) |*page_slot| {
+        for (&pager.pages) |*page_slot| {
             page_slot.* = null;
         }
-        return table;
+        return pager;
     }
 
-    pub fn deinit(self: *Table) void {
+    pub fn get_page(self: *Pager, page_num: usize) ![]u8 {
+        if (page_num >= TABLE_MAX_PAGES) {
+            return SerializationError.out_of_range;
+        }
+        const pageLookup = self.pages[page_num];
+        if (pageLookup) |page| {
+            return page;
+        } else {
+            const page = try self.allocator.alloc(u8, PAGE_SIZE);
+            const num_pages = self.file_length / PAGE_SIZE;
+            if (page_num < num_pages) {
+                const seek = page_num * PAGE_SIZE;
+                try self.file.seekTo(seek);
+                const read = try self.file.read(page);
+                if (read != PAGE_SIZE) {
+                    std.debug.print("Read less than a page size, {d}\n", .{read});
+                    return SerializationError.out_of_range;
+                }
+            }
+            self.pages[page_num] = page;
+            return page;
+        }
+    }
+
+    pub fn flush_all(self: *Pager) !void {
+        for (self.pages, 0..) |page_slot, page_num| {
+            if (page_slot) |page| {
+                try self.flush(page, page_num);
+            }
+        }
+    }
+
+    pub fn flush(self: *Pager, page: []u8, page_num: usize) !void {
+        try self.file.seekTo(page_num * PAGE_SIZE);
+        const wrote = try self.file.write(page);
+        if (wrote != PAGE_SIZE) {
+            std.debug.print("Wrote less than a page size: {d}", .{wrote});
+            return SerializationError.out_of_range;
+        }
+    }
+
+    pub fn close(self: *Pager) !void {
+        try self.flush_all();
+        defer self.file.close();
         for (self.pages) |page_opt| {
             if (page_opt) |page| {
                 self.allocator.free(page);
             }
         }
+    }
+};
+
+pub const Table = struct {
+    pager: Pager,
+    index: Index,
+    allocator: *std.mem.Allocator,
+
+    pub fn new_row_slot(self: *Table) ![]u8 {
+        defer self.index.num_rows += 1;
+        return self.row_slot(self.index.num_rows);
+    }
+
+    pub fn row_slot(self: *Table, row_num: usize) ![]u8 {
+        const page_num = row_num / ROWS_PER_PAGE;
+        const row_offset = row_num % ROWS_PER_PAGE;
+        const byte_offset = row_offset * @sizeOf(Row);
+        const page = try self.pager.get_page(page_num);
+        return page[byte_offset .. byte_offset + @sizeOf(Row)];
+    }
+
+    pub fn open(db_path: []const u8, index_path: []const u8, allocator: *std.mem.Allocator) !Table {
+        const pager = try Pager.open(db_path, allocator);
+        const index = try Index.open(index_path);
+        const table = Table{
+            .pager = pager,
+            .index = index,
+            .allocator = allocator,
+        };
+        return table;
+    }
+
+    pub fn close(self: *Table) !void {
+        try self.pager.close();
+        try self.index.close();
     }
 };
 
@@ -202,18 +310,4 @@ test "comptime constants check" {
     try std.testing.expect(PAGE_SIZE == 4096);
     try std.testing.expect(ROWS_PER_PAGE == 14);
     try std.testing.expect(TABLE_MAX_ROWS == 140);
-}
-
-test "fetch Row slot" {
-    var allocator = std.testing.allocator;
-    var table = Table.init(&allocator);
-    defer table.deinit();
-    const row_num = 17;
-    const sliceA0 = try table.row_slot(row_num);
-    const rowA0 = Row.init(120, "joe", "my@mail.com");
-    try serializeTo(Row, &rowA0, sliceA0);
-    const sliceA1 = try table.row_slot(row_num);
-    var rowA1 = Row.init(0, "", "");
-    try deserializeFrom(Row, sliceA1, &rowA1);
-    try std.testing.expect(rowA0.equals(rowA1));
 }

@@ -1,13 +1,13 @@
 import pytest
 import subprocess
+import tempfile
 
 
 @pytest.fixture
 def run_script():
-    def _run_script(commands):
-        # Use shell=True so `zig build run` runs properly
+    def _run_script(db_file, idx_file, commands):
         process = subprocess.Popen(
-            "zig build run",
+            f"zig build run -- {db_file.name} {idx_file.name}",
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -22,25 +22,31 @@ def run_script():
 
 
 def test_inserts_and_retrieves_row(run_script):
-    result = run_script(
-        [
-            "insert 1 user1 person1@example.com",
-            "select",
-            ".exit",
-        ]
-    )
-    expected = [
-        "(1, user1, person1@example.com)",
-        "bye...",
-    ]
-    assert result == expected
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "insert 1 user1 person1@example.com",
+                    "select",
+                    ".exit",
+                ],
+            )
+            expected = [
+                "(1, user1, person1@example.com)",
+                "bye...",
+            ]
+            assert result == expected
 
 
 def test_prints_error_message_when_table_is_full(run_script):
     script = [f"insert {i} user{i} person{i}@example.com" for i in range(0, 141)]
     script.append(".exit")
-    result = run_script(script)
-    assert result[-2] == "Out of range!"
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(db_file, idx_file, script)
+            assert result[-2] == "Out of range!"
 
 
 def test_allows_inserting_strings_that_are_maximum_length(run_script):
@@ -51,12 +57,14 @@ def test_allows_inserting_strings_that_are_maximum_length(run_script):
         "select",
         ".exit",
     ]
-    result = run_script(script)
-    expected = [
-        f"(1, {long_username}, {long_email})",
-        "bye...",
-    ]
-    assert result == expected
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(db_file, idx_file, script)
+            expected = [
+                f"(1, {long_username}, {long_email})",
+                "bye...",
+            ]
+            assert result == expected
 
 
 def test_prints_error_message_if_username_is_too_long(run_script):
@@ -67,12 +75,10 @@ def test_prints_error_message_if_username_is_too_long(run_script):
         "select",
         ".exit",
     ]
-    result = run_script(script)
-    expected = [
-        f"(1, {long_username}, {long_email})",
-        "bye...",
-    ]
-    assert result[0] == "Token exceeds field capacity: 32 >= 32"
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(db_file, idx_file, script)
+            assert result[0] == "Token exceeds field capacity: 32 >= 32"
 
 
 def test_prints_error_message_if_email_is_too_long(run_script):
@@ -83,9 +89,37 @@ def test_prints_error_message_if_email_is_too_long(run_script):
         "select",
         ".exit",
     ]
-    result = run_script(script)
-    expected = [
-        f"(1, {long_username}, {long_email})",
-        "bye...",
-    ]
-    assert result[0] == "Token exceeds field capacity: 256 >= 256"
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(db_file, idx_file, script)
+            assert result[0] == "Token exceeds field capacity: 256 >= 256"
+
+
+def test_persistency(run_script):
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "insert 1 user1 person1@example.com",
+                    ".exit",
+                ],
+            )
+            expected = [
+                "bye...",
+            ]
+            assert result == expected
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "select",
+                    ".exit",
+                ],
+            )
+            expected = [
+                "(1, user1, person1@example.com)",
+                "bye...",
+            ]
+            assert result == expected

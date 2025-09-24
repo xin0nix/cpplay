@@ -8,6 +8,30 @@ const Table = common.Table;
 const Executor = vm.Executor;
 
 pub fn main() !void {
+    var args = std.process.args();
+    var database_file: []const u8 = undefined;
+    var index_file: []const u8 = undefined;
+    var initalized: bool = false;
+    for (0..3) |i| {
+        if (args.next()) |arg| {
+            switch (i) {
+                1 => {
+                    database_file = arg;
+                },
+                2 => {
+                    index_file = arg;
+                    initalized = true;
+                },
+                else => {},
+            }
+        } else {
+            break;
+        }
+    }
+    if (!initalized) {
+        std.debug.print("Provide paths to database and index files\n", .{});
+        return;
+    }
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer {
         const err = gpa.deinit();
@@ -23,8 +47,15 @@ pub fn main() !void {
     const running: bool = true;
     const stdin = std.fs.File.stdin();
     var parser = Parser{};
-    var table = Table.init(&allocator);
-    defer table.deinit();
+    // FIXME: pass a page allocator to the table!
+    var table = try Table.open(database_file, index_file, &allocator);
+    defer table.close() catch |err| {
+        switch (err) {
+            else => {
+                std.debug.print("Failed to close the table properly", .{});
+            },
+        }
+    };
     var executor = Executor.init(&table);
 
     var buffer: [1024]u8 = undefined;

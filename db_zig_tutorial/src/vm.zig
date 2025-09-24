@@ -21,7 +21,7 @@ pub const Executor = struct {
             },
             .select => {
                 var row = Row.init(0, "", "");
-                for (0..self.table.num_rows) |i| {
+                for (0..self.table.index.num_rows) |i| {
                     const slice = try self.table.row_slot(i);
                     try common.deserializeFrom(Row, slice, &row);
                     row.dump();
