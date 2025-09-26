@@ -1,25 +1,19 @@
 const std = @import("std");
+const utils = @import("./utils.zig");
+const pgr = @import("./pager.zig");
 
 pub const Select = struct {};
 
-const USERNAME_SIZE = 32;
-const EMAIL_SIZE = 256;
-const PAGE_SIZE = std.heap.pageSize();
-const TABLE_MAX_PAGES = 10;
+const SerializationError = utils.SerializationError;
+
+const EMAIL_SIZE = utils.EMAIL_SIZE;
+const USERNAME_SIZE = utils.USERNAME_SIZE;
+const PAGE_SIZE = utils.PAGE_SIZE;
+const TABLE_MAX_PAGES = utils.TABLE_MAX_PAGES;
 const ROWS_PER_PAGE = PAGE_SIZE / @sizeOf(Row);
 const TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
-const SerializationError = error{
-    out_of_range,
-};
-
-pub fn cStringLen(slice: []const u8) usize {
-    var i: usize = 0;
-    while (i < slice.len) : (i += 1) {
-        if (slice[i] == 0) return i;
-    }
-    return slice.len; // No null terminator found in slice range
-}
+const cStringLen = utils.cStringLen;
 
 pub const Index = struct {
     file: std.fs.File,
@@ -62,106 +56,57 @@ pub const Index = struct {
     }
 };
 
-pub const Pager = struct {
-    file: std.fs.File,
-    file_length: u64,
-    pages: [TABLE_MAX_PAGES]?[]u8,
-    allocator: *std.mem.Allocator,
+pub const Cursor = struct {
+    table: *Table,
+    position: usize,
 
-    pub fn open(sub_path: []const u8, allocator: *std.mem.Allocator) !Pager {
-        const cwd = std.fs.cwd();
-        const file = try cwd.openFile(sub_path, .{
-            .mode = .read_write,
-        });
-        const file_length = (try file.stat()).size;
-        if (file_length % PAGE_SIZE > 0) {
-            std.debug.print("File size does not fit into page size {d}\n", .{file_length});
-            return SerializationError.out_of_range;
+    pub fn reached_end(self: *Cursor) bool {
+        if (self.position == self.table.index.num_rows) {
+            return true;
         }
-        var pager = Pager{
-            .file = file,
-            .file_length = file_length,
-            .pages = undefined,
-            .allocator = allocator,
-        };
-        for (&pager.pages) |*page_slot| {
-            page_slot.* = null;
-        }
-        return pager;
+        return false;
     }
 
-    pub fn get_page(self: *Pager, page_num: usize) ![]u8 {
-        if (page_num >= TABLE_MAX_PAGES) {
-            return SerializationError.out_of_range;
-        }
-        const pageLookup = self.pages[page_num];
-        if (pageLookup) |page| {
-            return page;
-        } else {
-            const page = try self.allocator.alloc(u8, PAGE_SIZE);
-            const num_pages = self.file_length / PAGE_SIZE;
-            if (page_num < num_pages) {
-                const seek = page_num * PAGE_SIZE;
-                try self.file.seekTo(seek);
-                const read = try self.file.read(page);
-                if (read != PAGE_SIZE) {
-                    std.debug.print("Read less than a page size, {d}\n", .{read});
-                    return SerializationError.out_of_range;
-                }
-            }
-            self.pages[page_num] = page;
-            return page;
-        }
+    pub fn advance(self: *Cursor) void {
+        self.position += 1;
     }
 
-    pub fn flush_all(self: *Pager) !void {
-        for (self.pages, 0..) |page_slot, page_num| {
-            if (page_slot) |page| {
-                try self.flush(page, page_num);
-            }
-        }
+    pub fn emplace(self: *Cursor) ![]u8 {
+        self.table.index.num_rows += 1;
+        return self.value();
     }
 
-    pub fn flush(self: *Pager, page: []u8, page_num: usize) !void {
-        try self.file.seekTo(page_num * PAGE_SIZE);
-        const wrote = try self.file.write(page);
-        if (wrote != PAGE_SIZE) {
-            std.debug.print("Wrote less than a page size: {d}", .{wrote});
-            return SerializationError.out_of_range;
-        }
-    }
-
-    pub fn close(self: *Pager) !void {
-        try self.flush_all();
-        defer self.file.close();
-        for (self.pages) |page_opt| {
-            if (page_opt) |page| {
-                self.allocator.free(page);
-            }
-        }
+    pub fn value(self: *Cursor) ![]u8 {
+        const row_num = self.position;
+        const page_num = row_num / ROWS_PER_PAGE;
+        const row_offset = row_num % ROWS_PER_PAGE;
+        const byte_offset = row_offset * @sizeOf(Row);
+        const page = try self.table.pager.get_page(page_num);
+        return page[byte_offset .. byte_offset + @sizeOf(Row)];
     }
 };
 
 pub const Table = struct {
-    pager: Pager,
+    pager: pgr.Pager(TABLE_MAX_PAGES),
     index: Index,
     allocator: *std.mem.Allocator,
 
-    pub fn new_row_slot(self: *Table) ![]u8 {
-        defer self.index.num_rows += 1;
-        return self.row_slot(self.index.num_rows);
+    pub fn start(self: *Table) Cursor {
+        return Cursor{
+            .table = self,
+            .position = 0,
+        };
     }
 
-    pub fn row_slot(self: *Table, row_num: usize) ![]u8 {
-        const page_num = row_num / ROWS_PER_PAGE;
-        const row_offset = row_num % ROWS_PER_PAGE;
-        const byte_offset = row_offset * @sizeOf(Row);
-        const page = try self.pager.get_page(page_num);
-        return page[byte_offset .. byte_offset + @sizeOf(Row)];
+    pub fn end(self: *Table) Cursor {
+        return Cursor{
+            .table = self,
+            .position = self.index.num_rows,
+        };
     }
 
     pub fn open(db_path: []const u8, index_path: []const u8, allocator: *std.mem.Allocator) !Table {
-        const pager = try Pager.open(db_path, allocator);
+        const pager = try pgr.Pager(TABLE_MAX_PAGES).open(db_path, allocator);
         const index = try Index.open(index_path);
         const table = Table{
             .pager = pager,

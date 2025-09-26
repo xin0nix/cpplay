@@ -123,3 +123,30 @@ def test_persistency(run_script):
                 "bye...",
             ]
             assert result == expected
+
+
+def test_persistency_multiple_pages(run_script):
+    insert = [f"insert {i} user{i} person{i}@example.com" for i in range(0, 140)]
+    insert.append(".exit")
+
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(
+                db_file,
+                idx_file,
+                insert,
+            )
+            expected = [
+                "bye...",
+            ]
+            assert result == expected
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "select",
+                    ".exit",
+                ],
+            )
+            for i in range(0, 140):
+                assert result[i] == f"({i}, user{i}, person{i}@example.com)"
