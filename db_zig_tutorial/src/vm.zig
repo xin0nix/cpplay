@@ -16,15 +16,18 @@ pub const Executor = struct {
     pub fn evaluate(self: *Executor, statement: common.Statement) !void {
         switch (statement) {
             .insert => |x| {
-                const slot = try self.table.new_row_slot();
+                var cursor = self.table.end();
+                const slot = try cursor.emplace();
                 try common.serializeTo(Row, &x, slot);
             },
             .select => {
                 var row = Row.init(0, "", "");
-                for (0..self.table.index.num_rows) |i| {
-                    const slice = try self.table.row_slot(i);
+                var cursor = self.table.start();
+                while (!cursor.reached_end()) {
+                    const slice = try cursor.value();
                     try common.deserializeFrom(Row, slice, &row);
                     row.dump();
+                    cursor.advance();
                 }
             },
         }

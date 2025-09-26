@@ -36,6 +36,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
+    const utils = b.addModule("utils", .{
+        .root_source_file = b.path("src/utils.zig"),
+        .target = target,
+    });
+
     const common_tests = b.addTest(.{
         .root_module = common,
     });
@@ -44,8 +49,13 @@ pub fn build(b: *std.Build) void {
         .root_module = parser,
     });
 
+    const utils_test = b.addTest(.{
+        .root_module = utils,
+    });
+
     const run_common_tests = b.addRunArtifact(common_tests);
     const run_parser_tests = b.addRunArtifact(parser_tests);
+    const run_utils_tests = b.addRunArtifact(utils_test);
 
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
@@ -57,4 +67,5 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_common_tests.step);
     test_step.dependOn(&run_exe_tests.step);
     test_step.dependOn(&run_parser_tests.step);
+    test_step.dependOn(&run_utils_tests.step);
 }

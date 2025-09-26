@@ -1,4 +1,5 @@
 const std = @import("std");
+const utils = @import("./utils.zig");
 
 pub const Select = struct {};
 
@@ -13,13 +14,7 @@ const SerializationError = error{
     out_of_range,
 };
 
-pub fn cStringLen(slice: []const u8) usize {
-    var i: usize = 0;
-    while (i < slice.len) : (i += 1) {
-        if (slice[i] == 0) return i;
-    }
-    return slice.len; // No null terminator found in slice range
-}
+const cStringLen = utils.cStringLen;
 
 pub const Index = struct {
     file: std.fs.File,
@@ -142,22 +137,53 @@ pub const Pager = struct {
     }
 };
 
+pub const Cursor = struct {
+    table: *Table,
+    position: usize,
+
+    pub fn reached_end(self: *Cursor) bool {
+        if (self.position == self.table.index.num_rows) {
+            return true;
+        }
+        return false;
+    }
+
+    pub fn advance(self: *Cursor) void {
+        self.position += 1;
+    }
+
+    pub fn emplace(self: *Cursor) ![]u8 {
+        self.table.index.num_rows += 1;
+        return self.value();
+    }
+
+    pub fn value(self: *Cursor) ![]u8 {
+        const row_num = self.position;
+        const page_num = row_num / ROWS_PER_PAGE;
+        const row_offset = row_num % ROWS_PER_PAGE;
+        const byte_offset = row_offset * @sizeOf(Row);
+        const page = try self.table.pager.get_page(page_num);
+        return page[byte_offset .. byte_offset + @sizeOf(Row)];
+    }
+};
+
 pub const Table = struct {
     pager: Pager,
     index: Index,
     allocator: *std.mem.Allocator,
 
-    pub fn new_row_slot(self: *Table) ![]u8 {
-        defer self.index.num_rows += 1;
-        return self.row_slot(self.index.num_rows);
+    pub fn start(self: *Table) Cursor {
+        return Cursor{
+            .table = self,
+            .position = 0,
+        };
     }
 
-    pub fn row_slot(self: *Table, row_num: usize) ![]u8 {
-        const page_num = row_num / ROWS_PER_PAGE;
-        const row_offset = row_num % ROWS_PER_PAGE;
-        const byte_offset = row_offset * @sizeOf(Row);
-        const page = try self.pager.get_page(page_num);
-        return page[byte_offset .. byte_offset + @sizeOf(Row)];
+    pub fn end(self: *Table) Cursor {
+        return Cursor{
+            .table = self,
+            .position = self.index.num_rows,
+        };
     }
 
     pub fn open(db_path: []const u8, index_path: []const u8, allocator: *std.mem.Allocator) !Table {
