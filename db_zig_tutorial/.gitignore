@@ -1,2 +1,6 @@
 .zig-cache
 zig-out/
+.venv
+__pycache__/
+*.pyc
+*.db
