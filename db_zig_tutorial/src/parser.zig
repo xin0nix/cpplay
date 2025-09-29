@@ -38,6 +38,12 @@ pub const Parser = struct {
     pub fn parse(_: *Parser, tokenizer: *Tokenizer) !Command {
         const stmt = try readToken(tokenizer);
 
+        if (std.mem.eql(u8, stmt, ".btree")) {
+            return Command.btree;
+        }
+        if (std.mem.eql(u8, stmt, ".constants")) {
+            return Command.constants;
+        }
         if (std.mem.eql(u8, stmt, ".exit")) {
             return Command.exit;
         }
@@ -79,6 +85,18 @@ test "Parser identify test" {
         const view = ".exits";
         var tokenizer = std.mem.tokenizeAny(u8, view, " \n\t");
         try std.testing.expect(parser.parse(&tokenizer) == InputError.invalid_token);
+    }
+    // Test .constants command
+    {
+        const view = ".constants";
+        var tokenizer = std.mem.tokenizeAny(u8, view, " \n\t");
+        try std.testing.expect((try parser.parse(&tokenizer)).equals(Command{ .constants = {} }));
+    }
+    // Test .btree command
+    {
+        const view = ".btree";
+        var tokenizer = std.mem.tokenizeAny(u8, view, " \n\t");
+        try std.testing.expect((try parser.parse(&tokenizer)).equals(Command{ .btree = {} }));
     }
     // Test insert statement
     {

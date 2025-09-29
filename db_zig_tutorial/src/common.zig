@@ -1,8 +1,8 @@
 const std = @import("std");
 const utils = @import("./utils.zig");
 const pgr = @import("./pager.zig");
-const idx = @import("./index.zig");
 const rows = @import("./row.zig");
+const nodes = @import("./node.zig");
 
 pub const Select = struct {};
 
@@ -13,8 +13,7 @@ const TABLE_MAX_PAGES = utils.TABLE_MAX_PAGES;
 const ROWS_PER_PAGE = PAGE_SIZE / @sizeOf(Row);
 const TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
-const SerializationError = utils.SerializationError;
-const Index = idx.Index;
+const InternalError = utils.InternalError;
 const Pager = pgr.Pager(TABLE_MAX_PAGES);
 const Row = rows.Row;
 
@@ -22,59 +21,91 @@ const cStringLen = utils.cStringLen;
 
 pub const Cursor = struct {
     table: *Table,
-    position: usize,
+    page_num: u32,
+    cell_num: u32,
+    end_of_table: bool,
 
     pub fn reached_end(self: *Cursor) bool {
-        if (self.position == self.table.index.num_rows) {
-            return true;
+        return self.end_of_table;
+    }
+
+    pub fn advance(self: *Cursor) !void {
+        const page = try self.table.pager.get_page(self.page_num);
+        var node = nodes.NodeView{ .node = page };
+        self.cell_num += 1;
+        if (self.cell_num >= try node.leafNodeNumCells()) {
+            self.end_of_table = true;
         }
-        return false;
     }
 
-    pub fn advance(self: *Cursor) void {
-        self.position += 1;
+    pub fn leaf_node_insert(self: *Cursor, key: u32, row: *const Row) !void {
+        const page = try self.table.pager.get_page(self.page_num);
+        var node = nodes.NodeView{ .node = page };
+        const num_cells = try node.leafNodeNumCells();
+        if (num_cells >= nodes.LEAF_NODE_MAX_CELLS) {
+            std.debug.print("Need to implement splitting a leaf node: {d}\n", .{num_cells});
+            return InternalError.out_of_range;
+        }
+        if (self.cell_num < num_cells) {
+            // Make room for new cell
+            var i: u32 = num_cells;
+            while (i > self.cell_num) : (i -= 1) {
+                @memcpy(node.leafNodeCell(i).value, node.leafNodeCell(i - 1).value);
+            }
+        }
+        const cell = node.leafNodeCell(self.cell_num);
+        try utils.serializeTo(u32, &key, cell.key);
+        try utils.serializeTo(Row, row, cell.value);
+        try node.setLeafNodeNumCells(num_cells + 1); // ??
     }
 
-    pub fn emplace(self: *Cursor) ![]u8 {
-        self.table.index.num_rows += 1;
-        return self.value();
-    }
-
-    pub fn value(self: *Cursor) ![]u8 {
-        const row_num = self.position;
-        const page_num = row_num / ROWS_PER_PAGE;
-        const row_offset = row_num % ROWS_PER_PAGE;
-        const byte_offset = row_offset * @sizeOf(Row);
-        const page = try self.table.pager.get_page(page_num);
-        return page[byte_offset .. byte_offset + @sizeOf(Row)];
+    pub fn value(self: *Cursor) !nodes.LeafNodeCellView {
+        const page = try self.table.pager.get_page(self.page_num);
+        var node = nodes.NodeView{ .node = page };
+        return node.leafNodeCell(self.cell_num);
     }
 };
 
 pub const Table = struct {
     pager: pgr.Pager(TABLE_MAX_PAGES),
-    index: Index,
+    root_page_num: u32,
     allocator: *std.mem.Allocator,
 
-    pub fn start(self: *Table) Cursor {
+    pub fn start(self: *Table) !Cursor {
+        const root_node = try self.pager.get_page(self.root_page_num);
+        var root_node_view = nodes.NodeView{ .node = root_node };
+        const num_cells = try root_node_view.leafNodeNumCells();
         return Cursor{
             .table = self,
-            .position = 0,
+            .page_num = self.root_page_num,
+            .cell_num = 0,
+            .end_of_table = (num_cells == 0),
         };
     }
 
-    pub fn end(self: *Table) Cursor {
-        return Cursor{
+    pub fn end(self: *Table) !Cursor {
+        const root_node = try self.pager.get_page(self.root_page_num);
+        var root_node_view = nodes.NodeView{ .node = root_node };
+        const num_cells = try root_node_view.leafNodeNumCells();
+        const cursor = Cursor{
             .table = self,
-            .position = self.index.num_rows,
+            .page_num = self.root_page_num,
+            .cell_num = num_cells,
+            .end_of_table = true,
         };
+        return cursor;
     }
 
-    pub fn open(db_path: []const u8, index_path: []const u8, allocator: *std.mem.Allocator) !Table {
-        const pager = try Pager.open(db_path, allocator);
-        const index = try Index.open(index_path);
+    pub fn open(db_path: []const u8, allocator: *std.mem.Allocator) !Table {
+        var pager = try Pager.open(db_path, allocator);
+        if (pager.num_pages == 0) {
+            // New database file. Initialize page 0 as leaf node.
+            const root_node = try pager.get_page(0);
+            _ = try nodes.NodeView.init(root_node);
+        }
         const table = Table{
             .pager = pager,
-            .index = index,
+            .root_page_num = 0,
             .allocator = allocator,
         };
         return table;
@@ -82,7 +113,6 @@ pub const Table = struct {
 
     pub fn close(self: *Table) !void {
         try self.pager.close();
-        try self.index.close();
     }
 };
 
@@ -106,82 +136,47 @@ pub const Statement = union(enum) {
 
 pub const Command = union(enum) {
     exit,
+    constants,
+    btree,
     statement: Statement,
 
     pub fn equals(self: Command, other: Command) bool {
         switch (self) {
             .exit => {
                 switch (other) {
-                    .exit => return true,
+                    .exit => return true, // ok
+                    .constants => return false,
+                    .btree => return false,
+                    .statement => return false,
+                }
+            },
+            .constants => {
+                switch (other) {
+                    .exit => return false,
+                    .constants => return true, // ok
+                    .btree => return false,
+                    .statement => return false,
+                }
+            },
+            .btree => {
+                switch (other) {
+                    .exit => return false,
+                    .constants => return false,
+                    .btree => return true, // ok
                     .statement => return false,
                 }
             },
             .statement => {
                 switch (other) {
                     .exit => return false,
+                    .constants => return false,
+                    .btree => return false,
                     .statement => return self.statement.equals(other.statement),
                 }
             },
         }
     }
 };
-
-pub fn serializeTo(comptime T: type, obj: *const T, slice: []u8) !void {
-    const num_bytes = @sizeOf(T);
-    const raw: []const u8 = @ptrCast(obj);
-    if (slice.len != num_bytes) {
-        return error.InvalidDataLength;
-    }
-    @memcpy(slice, raw[0..num_bytes]);
-}
-
-pub fn serialize(comptime T: type, obj: *const T, allocator: *std.mem.Allocator) ![]u8 {
-    const num_bytes = @sizeOf(T);
-    const buffer = try allocator.alloc(u8, num_bytes);
-    try serializeTo(T, obj, buffer);
-    return buffer;
-}
-
-pub fn deserializeFrom(comptime T: type, slice: []const u8, obj: *T) !void {
-    const num_bytes = @sizeOf(T);
-    if (slice.len != num_bytes) {
-        return error.InvalidDataLength;
-    }
-    const raw: []u8 = @ptrCast(obj);
-    @memcpy(raw[0..num_bytes], slice);
-}
-
-pub fn deserialize(comptime T: type, slice: []const u8, allocator: *std.mem.Allocator) !*T {
-    const ptr = try allocator.create(T);
-    try deserializeFrom(T, slice, ptr);
-    return ptr;
-}
-
-test "serialize Row" {
-    var allocator = std.testing.allocator;
-    var insert = Row.init(120, "joe", "my@mail.com");
-    const serialized = try serialize(Row, &insert, &allocator);
-    defer allocator.free(serialized);
-    {
-        const expected = "x";
-        const view = serialized[0..1];
-        try std.testing.expect(std.mem.eql(u8, view, expected));
-    }
-    {
-        const expected = "joe";
-        const view = serialized[4 .. 4 + expected.len];
-        try std.testing.expect(std.mem.eql(u8, view, expected));
-    }
-    {
-        const expected = "my@mail.com";
-        const view = serialized[4 + 32 .. 4 + 32 + expected.len];
-        try std.testing.expect(std.mem.eql(u8, view, expected));
-    }
-    const deserialized = try deserialize(Row, serialized, &allocator);
-    defer allocator.destroy(deserialized);
-    const same = deserialized.equals(insert);
-    try std.testing.expect(same);
-}
 
 test "comptime constants check" {
     try std.testing.expect(PAGE_SIZE == 4096);

@@ -1,25 +1,33 @@
 const std = @import("std");
-const p = @import("./parser.zig");
+const prs = @import("./parser.zig");
 const common = @import("./common.zig");
 const vm = @import("./vm.zig");
+const utils = @import("./utils.zig");
+const rw = @import("./row.zig");
+const nd = @import("./node.zig");
 
-const Parser = p.Parser;
+const Parser = prs.Parser;
 const Table = common.Table;
 const Executor = vm.Executor;
+
+pub fn printConstants() void {
+    std.debug.print("ROW_SIZE: {}\n", .{@sizeOf(rw.Row)});
+    std.debug.print("COMMON_NODE_HEADER_SIZE: {}\n", .{nd.COMMON_NODE_HEADER_SIZE});
+    std.debug.print("LEAF_NODE_HEADER_SIZE: {}\n", .{nd.LEAF_NODE_HEADER_SIZE});
+    std.debug.print("LEAF_NODE_CELL_SIZE: {}\n", .{nd.LEAF_NODE_CELL_SIZE});
+    std.debug.print("LEAF_NODE_SPACE_FOR_CELLS: {}\n", .{nd.LEAF_NODE_SPACE_FOR_CELLS});
+    std.debug.print("LEAF_NODE_MAX_CELLS: {}\n", .{nd.LEAF_NODE_MAX_CELLS});
+}
 
 pub fn main() !void {
     var args = std.process.args();
     var database_file: []const u8 = undefined;
-    var index_file: []const u8 = undefined;
     var initalized: bool = false;
-    for (0..3) |i| {
+    for (0..2) |i| {
         if (args.next()) |arg| {
             switch (i) {
                 1 => {
                     database_file = arg;
-                },
-                2 => {
-                    index_file = arg;
                     initalized = true;
                 },
                 else => {},
@@ -48,7 +56,7 @@ pub fn main() !void {
     const stdin = std.fs.File.stdin();
     var parser = Parser{};
     // FIXME: pass a page allocator to the table!
-    var table = try Table.open(database_file, index_file, &allocator);
+    var table = try Table.open(database_file, &allocator);
     defer table.close() catch |err| {
         switch (err) {
             else => {
@@ -84,6 +92,14 @@ pub fn main() !void {
             };
 
             switch (command) {
+                .btree => {
+                    const root_node = try table.pager.get_page(0);
+                    var root_node_view = nd.NodeView{ .node = root_node };
+                    try root_node_view.dumpLeafNode();
+                },
+                .constants => {
+                    printConstants();
+                },
                 .exit => {
                     std.debug.print("bye...\n", .{});
                     return;

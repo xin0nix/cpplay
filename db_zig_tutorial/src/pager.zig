@@ -2,7 +2,7 @@ const std = @import("std");
 
 const utils = @import("./utils.zig");
 
-const SerializationError = utils.SerializationError;
+const InternalError = utils.InternalError;
 
 const PAGE_SIZE = utils.PAGE_SIZE;
 
@@ -11,6 +11,7 @@ pub fn Pager(comptime kMaxPages: usize) type {
         file: std.fs.File,
         file_length: u64,
         pages: [kMaxPages]?[]u8,
+        num_pages: u32,
         allocator: *std.mem.Allocator,
 
         pub fn open(sub_path: []const u8, allocator: *std.mem.Allocator) !Pager(kMaxPages) {
@@ -19,14 +20,16 @@ pub fn Pager(comptime kMaxPages: usize) type {
                 .mode = .read_write,
             });
             const file_length = (try file.stat()).size;
-            if (file_length % PAGE_SIZE > 0) {
-                std.debug.print("File size does not fit into page size {d}\n", .{file_length});
-                return SerializationError.out_of_range;
+            const num_pages: u32 = @intCast(file_length / PAGE_SIZE);
+            if (file_length % PAGE_SIZE != 0) {
+                std.debug.print("File size is not aligned with a page size: {d}\n", .{file_length});
+                return InternalError.out_of_range;
             }
             var pager = Pager(kMaxPages){
                 .file = file,
                 .file_length = file_length,
                 .pages = undefined,
+                .num_pages = num_pages,
                 .allocator = allocator,
             };
             for (&pager.pages) |*page_slot| {
@@ -35,25 +38,27 @@ pub fn Pager(comptime kMaxPages: usize) type {
             return pager;
         }
 
-        pub fn get_page(self: *Pager(kMaxPages), page_num: usize) ![]u8 {
+        pub fn get_page(self: *Pager(kMaxPages), page_num: u32) ![]u8 {
             if (page_num >= kMaxPages) {
-                return SerializationError.out_of_range;
+                return InternalError.out_of_range;
             }
             const pageLookup = self.pages[page_num];
             if (pageLookup) |page| {
                 return page;
             } else {
                 const page = try self.allocator.alloc(u8, PAGE_SIZE);
-                const num_pages = self.file_length / PAGE_SIZE;
-                if (page_num < num_pages) {
+                if (page_num >= self.num_pages) {
+                    self.num_pages = page_num + 1; // ???
+                } else {
                     const seek = page_num * PAGE_SIZE;
                     try self.file.seekTo(seek);
                     const read = try self.file.read(page);
                     if (read != PAGE_SIZE) {
                         std.debug.print("Read less than a page size, {d}\n", .{read});
-                        return SerializationError.out_of_range;
+                        return InternalError.out_of_range;
                     }
                 }
+
                 self.pages[page_num] = page;
                 return page;
             }
@@ -72,7 +77,7 @@ pub fn Pager(comptime kMaxPages: usize) type {
             const wrote = try self.file.write(page);
             if (wrote != PAGE_SIZE) {
                 std.debug.print("Wrote less than a page size: {d}\n", .{wrote});
-                return SerializationError.out_of_range;
+                return InternalError.out_of_range;
             }
         }
 

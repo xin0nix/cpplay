@@ -150,3 +150,51 @@ def test_persistency_multiple_pages(run_script):
             )
             for i in range(0, 140):
                 assert result[i] == f"({i}, user{i}, person{i}@example.com)"
+
+
+def test_constants(run_script):
+    script = [
+        ".constants",
+    ]
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(db_file, idx_file, script)
+            expected = [
+                "ROW_SIZE: 292",
+                "COMMON_NODE_HEADER_SIZE: 6",
+                "LEAF_NODE_HEADER_SIZE: 10",
+                "LEAF_NODE_CELL_SIZE: 296",
+                "LEAF_NODE_SPACE_FOR_CELLS: 4086",
+                "LEAF_NODE_MAX_CELLS: 13",
+            ]
+            assert result == expected
+
+
+def test_persistent_btree(run_script):
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "insert 3 user3 person3@example.com",
+                    "insert 1 user1 person1@example.com",
+                    "insert 2 user2 person2@example.com",
+                ],
+            )
+            expected = []
+            assert result == expected
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    ".btree",
+                ],
+            )
+            expected = [
+                "Leaf (size 3)",
+                " - 0: 3",
+                " - 1: 1",
+                " - 2: 2",
+            ]
+            assert result == expected

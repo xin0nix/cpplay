@@ -1,6 +1,7 @@
 const std = @import("std");
 const common = @import("./common.zig");
 const rows = @import("./row.zig");
+const utils = @import("./utils.zig");
 
 const Table = common.Table;
 const Row = rows.Row;
@@ -17,18 +18,17 @@ pub const Executor = struct {
     pub fn evaluate(self: *Executor, statement: common.Statement) !void {
         switch (statement) {
             .insert => |x| {
-                var cursor = self.table.end();
-                const slot = try cursor.emplace();
-                try common.serializeTo(Row, &x, slot);
+                var cursor = try self.table.end();
+                try cursor.leaf_node_insert(x.id, &x);
             },
             .select => {
                 var row = Row.init(0, "", "");
-                var cursor = self.table.start();
+                var cursor = try self.table.start();
                 while (!cursor.reached_end()) {
-                    const slice = try cursor.value();
-                    try common.deserializeFrom(Row, slice, &row);
+                    const cell_view = try cursor.value();
+                    try utils.deserializeFrom(Row, cell_view.value, &row);
                     row.dump();
-                    cursor.advance();
+                    try cursor.advance();
                 }
             },
         }
