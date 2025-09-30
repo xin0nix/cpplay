@@ -38,7 +38,7 @@ pub fn Pager(comptime kMaxPages: usize) type {
             return pager;
         }
 
-        pub fn get_page(self: *Pager(kMaxPages), page_num: u32) ![]u8 {
+        pub fn getPage(self: *Pager(kMaxPages), page_num: u32) ![]u8 {
             if (page_num >= kMaxPages) {
                 return InternalError.out_of_range;
             }
@@ -64,7 +64,7 @@ pub fn Pager(comptime kMaxPages: usize) type {
             }
         }
 
-        pub fn flush_all(self: *Pager(kMaxPages)) !void {
+        pub fn flushAll(self: *Pager(kMaxPages)) !void {
             for (self.pages, 0..) |page_slot, page_num| {
                 if (page_slot) |page| {
                     try self.flush(page, page_num);
@@ -82,7 +82,7 @@ pub fn Pager(comptime kMaxPages: usize) type {
         }
 
         pub fn close(self: *Pager(kMaxPages)) !void {
-            try self.flush_all();
+            try self.flushAll();
             defer self.file.close();
             for (self.pages) |page_opt| {
                 if (page_opt) |page| {

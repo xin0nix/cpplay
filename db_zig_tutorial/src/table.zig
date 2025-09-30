@@ -1,8 +1,8 @@
 const std = @import("std");
 const utils = @import("./utils.zig");
 const pgr = @import("./pager.zig");
-const rows = @import("./row.zig");
-const nodes = @import("./node.zig");
+const rw = @import("./row.zig");
+const nd = @import("./node.zig");
 
 pub const Select = struct {};
 
@@ -15,7 +15,7 @@ const TABLE_MAX_ROWS = ROWS_PER_PAGE * TABLE_MAX_PAGES;
 
 const InternalError = utils.InternalError;
 const Pager = pgr.Pager(TABLE_MAX_PAGES);
-const Row = rows.Row;
+const Row = rw.Row;
 
 const cStringLen = utils.cStringLen;
 
@@ -30,19 +30,19 @@ pub const Cursor = struct {
     }
 
     pub fn advance(self: *Cursor) !void {
-        const page = try self.table.pager.get_page(self.page_num);
-        var node = nodes.NodeView{ .node = page };
+        const page = try self.table.pager.getPage(self.page_num);
+        var node = nd.NodeView{ .node = page };
         self.cell_num += 1;
-        if (self.cell_num >= try node.leafNodeNumCells()) {
+        if (self.cell_num >= try node.getLeafNodeNumCells()) {
             self.end_of_table = true;
         }
     }
 
-    pub fn leaf_node_insert(self: *Cursor, key: u32, row: *const Row) !void {
-        const page = try self.table.pager.get_page(self.page_num);
-        var node = nodes.NodeView{ .node = page };
-        const num_cells = try node.leafNodeNumCells();
-        if (num_cells >= nodes.LEAF_NODE_MAX_CELLS) {
+    pub fn leafNodeInsert(self: *Cursor, key: u32, row: *const Row) !void {
+        const page = try self.table.pager.getPage(self.page_num);
+        var node = nd.NodeView{ .node = page };
+        const num_cells = try node.getLeafNodeNumCells();
+        if (num_cells >= nd.LEAF_NODE_MAX_CELLS) {
             std.debug.print("Need to implement splitting a leaf node: {d}\n", .{num_cells});
             return InternalError.out_of_range;
         }
@@ -50,19 +50,20 @@ pub const Cursor = struct {
             // Make room for new cell
             var i: u32 = num_cells;
             while (i > self.cell_num) : (i -= 1) {
-                @memcpy(node.leafNodeCell(i).value, node.leafNodeCell(i - 1).value);
+                @memcpy(node.getLeafNodeCell(i).key, node.getLeafNodeCell(i - 1).key);
+                @memcpy(node.getLeafNodeCell(i).value, node.getLeafNodeCell(i - 1).value);
             }
         }
-        const cell = node.leafNodeCell(self.cell_num);
+        const cell = node.getLeafNodeCell(self.cell_num);
         try utils.serializeTo(u32, &key, cell.key);
         try utils.serializeTo(Row, row, cell.value);
-        try node.setLeafNodeNumCells(num_cells + 1); // ??
+        try node.setLeafNodeNumCells(num_cells + 1);
     }
 
-    pub fn value(self: *Cursor) !nodes.LeafNodeCellView {
-        const page = try self.table.pager.get_page(self.page_num);
-        var node = nodes.NodeView{ .node = page };
-        return node.leafNodeCell(self.cell_num);
+    pub fn value(self: *Cursor) !nd.LeafNodeCellView {
+        const page = try self.table.pager.getPage(self.page_num);
+        var node = nd.NodeView{ .node = page };
+        return node.getLeafNodeCell(self.cell_num);
     }
 };
 
@@ -72,9 +73,9 @@ pub const Table = struct {
     allocator: *std.mem.Allocator,
 
     pub fn start(self: *Table) !Cursor {
-        const root_node = try self.pager.get_page(self.root_page_num);
-        var root_node_view = nodes.NodeView{ .node = root_node };
-        const num_cells = try root_node_view.leafNodeNumCells();
+        const root_node = try self.pager.getPage(self.root_page_num);
+        var root_node_view = nd.NodeView{ .node = root_node };
+        const num_cells = try root_node_view.getLeafNodeNumCells();
         return Cursor{
             .table = self,
             .page_num = self.root_page_num,
@@ -83,16 +84,49 @@ pub const Table = struct {
         };
     }
 
-    pub fn end(self: *Table) !Cursor {
-        const root_node = try self.pager.get_page(self.root_page_num);
-        var root_node_view = nodes.NodeView{ .node = root_node };
-        const num_cells = try root_node_view.leafNodeNumCells();
-        const cursor = Cursor{
+    // Return the position of the given key.
+    // If the key is not present, return the position where it should be inserted
+    pub fn find(self: *Table, key: u32) !Cursor {
+        const root_page = try self.pager.getPage(self.root_page_num);
+        var root_node = nd.NodeView{ .node = root_page };
+        // TODO: get node type
+        if (try root_node.getType() == .leaf) {
+            return self.leafNodeFind(self.root_page_num, key);
+        }
+        std.debug.print("Need to implement searching an internal node\n", .{});
+        return InternalError.not_implemented;
+    }
+
+    // This will either return
+    // - the position of the key,
+    // - the position of another key that we’ll need to move if we want to insert the new key, or
+    // - the position one past the last key
+    fn leafNodeFind(self: *Table, page_num: u32, key: u32) !Cursor {
+        const page = try self.pager.getPage(page_num);
+        var node = nd.NodeView{ .node = page };
+        const num_cells = try node.getLeafNodeNumCells();
+        var cursor = Cursor{
             .table = self,
-            .page_num = self.root_page_num,
-            .cell_num = num_cells,
-            .end_of_table = true,
+            .page_num = page_num,
+            .cell_num = undefined,
+            .end_of_table = (num_cells == 0),
         };
+        var min_index: u32 = 0;
+        var one_past_max_index = num_cells;
+        while (min_index != one_past_max_index) {
+            const index = (min_index + one_past_max_index) / 2;
+            var cell = node.getLeafNodeCell(index);
+            const key_at_index = try cell.getKey();
+            if (key == key_at_index) {
+                cursor.cell_num = index;
+                return cursor;
+            } else if (key < key_at_index) {
+                one_past_max_index = index;
+            } else {
+                min_index = index + 1;
+            }
+        }
+        cursor.cell_num = min_index;
         return cursor;
     }
 
@@ -100,8 +134,8 @@ pub const Table = struct {
         var pager = try Pager.open(db_path, allocator);
         if (pager.num_pages == 0) {
             // New database file. Initialize page 0 as leaf node.
-            const root_node = try pager.get_page(0);
-            _ = try nodes.NodeView.init(root_node);
+            const root_node = try pager.getPage(0);
+            _ = try nd.NodeView.initLeaf(root_node);
         }
         const table = Table{
             .pager = pager,

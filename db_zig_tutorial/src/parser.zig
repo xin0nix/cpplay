@@ -1,11 +1,11 @@
 const std = @import("std");
-const common = @import("common.zig");
+const tbl = @import("table.zig");
 const rows = @import("./row.zig");
 
-const Command = common.Command;
-const Statement = common.Statement;
+const Command = tbl.Command;
+const Statement = tbl.Statement;
 const Row = rows.Row;
-const Select = common.Select;
+const Select = tbl.Select;
 
 const Tokenizer = std.mem.TokenIterator(u8, std.mem.DelimiterType.any);
 

@@ -1,13 +1,13 @@
 const std = @import("std");
 const prs = @import("./parser.zig");
-const common = @import("./common.zig");
+const tb = @import("./table.zig");
 const vm = @import("./vm.zig");
 const utils = @import("./utils.zig");
 const rw = @import("./row.zig");
 const nd = @import("./node.zig");
 
 const Parser = prs.Parser;
-const Table = common.Table;
+const Table = tb.Table;
 const Executor = vm.Executor;
 
 pub fn printConstants() void {
@@ -93,7 +93,7 @@ pub fn main() !void {
 
             switch (command) {
                 .btree => {
-                    const root_node = try table.pager.get_page(0);
+                    const root_node = try table.pager.getPage(0);
                     var root_node_view = nd.NodeView{ .node = root_node };
                     try root_node_view.dumpLeafNode();
                 },
@@ -108,6 +108,9 @@ pub fn main() !void {
                     executor.evaluate(s) catch |err| {
                         switch (err) {
                             error.out_of_range => std.debug.print("Out of range!\n", .{}),
+                            error.duplicate_key => std.debug.print("Duplicate key!\n", .{}),
+                            error.not_implemented => std.debug.print("Not implemented\n", .{}),
+                            error.table_full => std.debug.print("Table is full\n", .{}),
                             else => std.debug.print("Failed to evaluate statement\n", .{}),
                         }
                     };

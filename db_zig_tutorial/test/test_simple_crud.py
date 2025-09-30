@@ -46,7 +46,7 @@ def test_prints_error_message_when_table_is_full(run_script):
     with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
         with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
             result = run_script(db_file, idx_file, script)
-            assert result[-2] == "Out of range!"
+            assert result[-2] == "Table is full"
 
 
 def test_allows_inserting_strings_that_are_maximum_length(run_script):
@@ -193,8 +193,23 @@ def test_persistent_btree(run_script):
             )
             expected = [
                 "Leaf (size 3)",
-                " - 0: 3",
-                " - 1: 1",
-                " - 2: 2",
+                " - 0: 1",
+                " - 1: 2",
+                " - 2: 3",
             ]
+            assert result == expected
+
+
+def test_detects_duplicate_keys(run_script):
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as db_file:
+        with tempfile.NamedTemporaryFile(mode="w", delete=True) as idx_file:
+            result = run_script(
+                db_file,
+                idx_file,
+                [
+                    "insert 1 user1 person1@example.com",
+                    "insert 1 joe joe@example.com",
+                ],
+            )
+            expected = ["Duplicate key!"]
             assert result == expected

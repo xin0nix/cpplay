@@ -7,7 +7,10 @@ pub const PAGE_SIZE = std.heap.pageSize();
 pub const TABLE_MAX_PAGES = 10;
 
 pub const InternalError = error{
+    not_implemented,
     out_of_range,
+    table_full,
+    duplicate_key,
 };
 
 pub fn cStringLen(slice: []const u8) usize {

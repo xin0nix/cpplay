@@ -26,8 +26,8 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    const common = b.addModule("common", .{
-        .root_source_file = b.path("src/common.zig"),
+    const table = b.addModule("table", .{
+        .root_source_file = b.path("src/table.zig"),
         .target = target,
     });
 
@@ -41,8 +41,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
-    const common_tests = b.addTest(.{
-        .root_module = common,
+    const table_tests = b.addTest(.{
+        .root_module = table,
     });
 
     const parser_tests = b.addTest(.{
@@ -53,7 +53,7 @@ pub fn build(b: *std.Build) void {
         .root_module = utils,
     });
 
-    const run_common_tests = b.addRunArtifact(common_tests);
+    const run_table_tests = b.addRunArtifact(table_tests);
     const run_parser_tests = b.addRunArtifact(parser_tests);
     const run_utils_tests = b.addRunArtifact(utils_test);
 
@@ -64,7 +64,7 @@ pub fn build(b: *std.Build) void {
     const run_exe_tests = b.addRunArtifact(exe_tests);
 
     const test_step = b.step("test", "Run tests");
-    test_step.dependOn(&run_common_tests.step);
+    test_step.dependOn(&run_table_tests.step);
     test_step.dependOn(&run_exe_tests.step);
     test_step.dependOn(&run_parser_tests.step);
     test_step.dependOn(&run_utils_tests.step);
