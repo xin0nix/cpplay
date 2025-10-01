@@ -22,7 +22,8 @@ pub const Executor = struct {
             .insert => |row| {
                 const root_page = try self.table.pager.getPage(self.table.root_page_num);
                 var root_node = nd.NodeView{ .node = root_page };
-                const num_cells = try root_node.getLeafNodeNumCells();
+                var leaf_view = root_node.asLeaf();
+                const num_cells = try leaf_view.getNumCells();
                 if (num_cells >= nd.LEAF_NODE_MAX_CELLS) {
                     std.debug.print("Table full: {d}\n", .{num_cells});
                     return InternalError.table_full;
@@ -30,7 +31,7 @@ pub const Executor = struct {
                 const key_to_insert = row.id;
                 var cursor = try self.table.find(key_to_insert);
                 if (cursor.cell_num < num_cells) {
-                    const cell = root_node.getLeafNodeCell(cursor.cell_num);
+                    const cell = leaf_view.getCell(cursor.cell_num);
                     const key_at_index = try cell.getKey();
                     if (key_at_index == key_to_insert) {
                         return InternalError.duplicate_key;

@@ -32,8 +32,9 @@ pub const Cursor = struct {
     pub fn advance(self: *Cursor) !void {
         const page = try self.table.pager.getPage(self.page_num);
         var node = nd.NodeView{ .node = page };
+        var leaf_view = node.asLeaf();
         self.cell_num += 1;
-        if (self.cell_num >= try node.getLeafNodeNumCells()) {
+        if (self.cell_num >= try leaf_view.getNumCells()) {
             self.end_of_table = true;
         }
     }
@@ -41,7 +42,8 @@ pub const Cursor = struct {
     pub fn leafNodeInsert(self: *Cursor, key: u32, row: *const Row) !void {
         const page = try self.table.pager.getPage(self.page_num);
         var node = nd.NodeView{ .node = page };
-        const num_cells = try node.getLeafNodeNumCells();
+        var leaf_view = node.asLeaf();
+        const num_cells = try leaf_view.getNumCells();
         if (num_cells >= nd.LEAF_NODE_MAX_CELLS) {
             std.debug.print("Need to implement splitting a leaf node: {d}\n", .{num_cells});
             return InternalError.out_of_range;
@@ -50,20 +52,21 @@ pub const Cursor = struct {
             // Make room for new cell
             var i: u32 = num_cells;
             while (i > self.cell_num) : (i -= 1) {
-                @memcpy(node.getLeafNodeCell(i).key, node.getLeafNodeCell(i - 1).key);
-                @memcpy(node.getLeafNodeCell(i).value, node.getLeafNodeCell(i - 1).value);
+                @memcpy(leaf_view.getCell(i).key, leaf_view.getCell(i - 1).key);
+                @memcpy(leaf_view.getCell(i).value, leaf_view.getCell(i - 1).value);
             }
         }
-        const cell = node.getLeafNodeCell(self.cell_num);
+        const cell = leaf_view.getCell(self.cell_num);
         try utils.serializeTo(u32, &key, cell.key);
         try utils.serializeTo(Row, row, cell.value);
-        try node.setLeafNodeNumCells(num_cells + 1);
+        try leaf_view.setNumCells(num_cells + 1);
     }
 
     pub fn value(self: *Cursor) !nd.LeafNodeCellView {
         const page = try self.table.pager.getPage(self.page_num);
         var node = nd.NodeView{ .node = page };
-        return node.getLeafNodeCell(self.cell_num);
+        var leaf_view = node.asLeaf();
+        return leaf_view.getCell(self.cell_num);
     }
 };
 
@@ -73,9 +76,10 @@ pub const Table = struct {
     allocator: *std.mem.Allocator,
 
     pub fn start(self: *Table) !Cursor {
-        const root_node = try self.pager.getPage(self.root_page_num);
-        var root_node_view = nd.NodeView{ .node = root_node };
-        const num_cells = try root_node_view.getLeafNodeNumCells();
+        const root_page = try self.pager.getPage(self.root_page_num);
+        var root_node_view = nd.NodeView{ .node = root_page };
+        var leaf_view = root_node_view.asLeaf();
+        const num_cells = try leaf_view.getNumCells();
         return Cursor{
             .table = self,
             .page_num = self.root_page_num,
@@ -104,7 +108,8 @@ pub const Table = struct {
     fn leafNodeFind(self: *Table, page_num: u32, key: u32) !Cursor {
         const page = try self.pager.getPage(page_num);
         var node = nd.NodeView{ .node = page };
-        const num_cells = try node.getLeafNodeNumCells();
+        var leaf_view = node.asLeaf();
+        const num_cells = try leaf_view.getNumCells();
         var cursor = Cursor{
             .table = self,
             .page_num = page_num,
@@ -115,7 +120,7 @@ pub const Table = struct {
         var one_past_max_index = num_cells;
         while (min_index != one_past_max_index) {
             const index = (min_index + one_past_max_index) / 2;
-            var cell = node.getLeafNodeCell(index);
+            var cell = leaf_view.getCell(index);
             const key_at_index = try cell.getKey();
             if (key == key_at_index) {
                 cursor.cell_num = index;

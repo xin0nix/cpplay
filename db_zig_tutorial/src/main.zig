@@ -95,7 +95,8 @@ pub fn main() !void {
                 .btree => {
                     const root_node = try table.pager.getPage(0);
                     var root_node_view = nd.NodeView{ .node = root_node };
-                    try root_node_view.dumpLeafNode();
+                    var leaf_view = root_node_view.asLeaf();
+                    try leaf_view.dump();
                 },
                 .constants => {
                     printConstants();
